@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "outDir": "./",
+    "rootDir": "./",
+    "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "sourceMap": false,
+    "removeComments": false,
+    "moduleResolution": "bundler",  // 👈 thêm
+    "types": ["vite/client"]         // 👈 thêm
+  },
+  "include": ["app.ts", "src/**/*", "vite-env.d.ts"], // 👈 sửa
+  "exclude": ["node_modules", "dist"]
+}

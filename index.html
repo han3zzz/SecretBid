@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecretBid — Sealed Auction on Rialo</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Serif+Display:ital@0;1&family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap"/>
+
+<!-- Bootstrap Icons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+
+<!-- Phosphor Icons CDN (additional beautiful icons) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/duotone/style.css"/>
+
+<!-- Boxicons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css"/>
+
+<link rel="stylesheet" href="./src/style.css"/>
+
+
+
+</head>
+<body>
+
+<!-- ── ANIMATED BACKGROUND ─────────────────────────────────── -->
+<div id="orbs" aria-hidden="true">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- ── CURSOR GLOW ──────────────────────────────────────────── -->
+<div id="cursor-glow" aria-hidden="true"></div>
+
+<!-- ── TOP ANNOUNCEMENT BANNER ─────────────────────────────── -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  NAVBAR                                                  ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<nav id="main-nav">
+  <a class="nav-brand" href="#">
+    <div class="brand-logo-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="50 0 460 460" width="64" height="64">
+        <g><g>
+          <path fill="#6D453D" d="M362.724,258.882l-50.044,50.045l-5.591-5.921L210.78,201.06c-3.675-3.675-3.378-9.982,0.657-14.017l29.407-29.407c4.035-4.035,10.342-4.332,14.017-0.657l101.941,96.312L362.724,258.882z"/>
+          <path fill="#845245" d="M501.549,390.544c0.119,0.119,0.246,0.229,0.369,0.352c14.386,14.386,13.241,38.859-2.56,54.66c-15.801,15.801-40.275,16.946-54.66,2.56c-0.123-0.123-0.233-0.25-0.352-0.369c-0.653-0.373-1.263-0.822-1.814-1.373L314.976,311.36l-2.297-2.433l50.044-50.045l2.433,2.297l135.019,127.55C500.726,389.281,501.171,389.896,501.549,390.544z"/>
+          <path fill="#EAC16D" d="M270.393,136.571l-80.022,80.022c-2.52,2.52-6.604,2.52-9.124,0l-66.53-66.53c-2.519-2.52-2.519-6.604,0-9.124l80.022-80.022c2.52-2.52,6.604-2.52,9.124,0l66.53,66.53C272.912,129.966,272.912,134.051,270.393,136.571z"/>
+          <polygon fill="#EAC16D" points="365.157,261.18 314.976,311.36 312.679,308.927 307.089,303.006 356.802,253.292 362.724,258.882"/>
+          <path fill="#6D453D" d="M143.058,244.467c2.44-17.092,15.937-30.589,33.032-33.032l-51.598-51.598c-2.443,17.095-15.94,30.592-33.032,33.032L143.058,244.467z"/>
+          <path fill="#845245" d="M58.605,191.95l16.378-16.378c1.59-1.59,4.167-1.59,5.757,0l74.997,74.997c1.59,1.59,1.59,4.167,0,5.757l-16.378,16.378c-6.613,6.613-17.334,6.613-23.946,0l-56.808-56.808C51.992,209.284,51.992,198.563,58.605,191.95z"/>
+          <path fill="#845245" d="M162.258,249.806l-16.378,16.378c-1.59,1.59-4.167,1.59-5.757,0l-74.997-74.997c-1.59-1.59-1.59-4.167,0-5.757l16.378-16.378c6.613-6.613,17.334-6.613,23.946,0l56.808,56.808C168.87,232.472,168.87,243.193,162.258,249.806z"/>
+          <path fill="#BC9381" d="M151.466,260.597c1.024-1.024,1.024-2.685,0-3.71l-77.045-77.045c-1.024-1.024-2.685-1.024-3.709,0c-1.866,1.866-1.866,4.892,0,6.758l73.997,73.997C146.574,262.463,149.6,262.463,151.466,260.597z"/>
+          <path fill="#845245" d="M108.924,141.631l0.897-0.897c0.842-0.842,2.208-0.842,3.05,0l77.704,77.704c0.842,0.842,0.842,2.208,0,3.05l-0.897,0.897c-3.503,3.503-9.183,3.503-12.687,0l-68.068-68.068C105.42,150.814,105.42,145.134,108.924,141.631z"/>
+          <path fill="#6D453D" d="M246.515,37.815c-2.44,17.092-15.937,30.588-33.032,33.031l51.598,51.598c2.443-17.095,15.94-30.592,33.031-33.032L246.515,37.815z"/>
+          <path fill="#845245" d="M245.595,4.959l-16.378,16.378c-1.59,1.59-1.59,4.167,0,5.757l74.997,74.997c1.59,1.59,4.167,1.59,5.757,0l16.378-16.378c6.613-6.613,6.613-17.334,0-23.946L269.542,4.959C262.929-1.653,252.208-1.653,245.595,4.959z"/>
+          <path fill="#845245" d="M303.451,108.612l16.378-16.378c1.59-1.59,1.59-4.167,0-5.757L244.832,11.48c-1.59-1.59-4.167-1.59-5.757,0l-16.378,16.378c-6.613,6.613-6.613,17.334,0,23.947l56.808,56.808C286.117,115.225,296.839,115.225,303.451,108.612z"/>
+          <path fill="#BC9381" d="M314.243,97.821c-1.024,1.024-2.685,1.024-3.709,0l-77.045-77.045c-1.024-1.024-1.024-2.685,0-3.71c1.866-1.866,4.892-1.866,6.758,0l73.997,73.997C316.109,92.929,316.109,95.955,314.243,97.821z"/>
+          <path fill="#845245" d="M195.276,55.278l-0.897,0.897c-0.842,0.842-0.842,2.208,0,3.05l77.704,77.704c0.842,0.842,2.208,0.842,3.05,0l0.897-0.897c3.503-3.503,3.503-9.183,0-12.687l-68.068-68.068C204.46,51.775,198.78,51.775,195.276,55.278z"/>
+        </g></g>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-name">SecretBid</span>
+      <span class="brand-sub">Built on Rialo</span>
+    </div>
+  </a>
+
+  <div class="nav-tabs" id="nav-tabs">
+    <button class="nav-tab active" data-page="auctions">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:currentColor"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg> Auctions
+    </button>
+    <button class="nav-tab" data-page="mybids">
+      <i class="bi bi-receipt"></i> My Bids
+    </button>
+   
+    <button class="nav-tab" data-page="create">
+      <i class="bi bi-plus-circle"></i> Create
+    </button>
+    <button class="nav-tab" data-page="scanner">
+      <span class="tab-hot-badge">LIVE</span>
+      <i class="bi bi-activity"></i> BidWar Scanner
+    </button>
+     <button class="nav-tab" data-page="vault">
+      <i class="bi bi-clock-history"></i> Activity
+    </button>
+    <button class="nav-tab" data-page="analytics">
+      <i class="bi bi-bar-chart-line"></i> Analytics
+    </button>
+    <button class="nav-tab" data-page="leaderboard">
+      <i class="bi bi-trophy"></i> Leaderboard
+    </button>
+    <button class="nav-tab" data-page="disputes">
+      <i class="bi bi-exclamation-triangle"></i> Disputes
+    </button>
+    <button class="nav-tab" data-page="docs">
+      <i class="bi bi-book"></i> Docs
+    </button>
+  </div>
+
+  <div class="nav-right">
+    <div class="rex-pill">
+      <div class="pulse"></div>
+      REX Privacy
+    </div>
+    <div class="wallet-btn" id="nav-wallet-btn">
+      <div class="wallet-dot red" id="wallet-dot"></div>
+      <span id="wallet-btn-label">Connect Wallet</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── LIVE ACTIVITY TICKER ────────────────────────────────── -->
+<div id="activity-ticker" aria-label="Live activity feed" aria-live="polite">
+  <div class="ticker-left-fade"></div>
+  <div class="ticker-live-badge">
+    <div class="ticker-live-dot"></div>
+    LIVE
+  </div>
+  <div class="ticker-track-wrap">
+    <div class="ticker-track" id="ticker-track">
+      <!-- Items injected by JS -->
+    </div>
+  </div>
+  <div class="ticker-right-fade"></div>
+</div>
+
+<!-- ── MOBILE BOTTOM NAV ───────────────────────────────────── -->
+<div class="mob-nav" id="mob-nav">
+  <div class="mob-nav-item active" data-page="auctions">
+    <div class="mob-nav-ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:currentColor"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg></div>
+    Auctions
+  </div>
+  <div class="mob-nav-item" data-page="mybids">
+    <div class="mob-nav-ico"><i class="bi bi-receipt"></i></div>
+    My Bids
+  </div>
+  <div class="mob-nav-item" data-page="vault">
+    <div class="mob-nav-ico"><i class="bi bi-clock-history"></i></div>
+    Activity
+  </div>
+  <div class="mob-nav-item" data-page="scanner">
+    <div class="mob-nav-ico"><i class="bi bi-activity"></i></div>
+    Scanner
+  </div>
+
+  <div class="mob-nav-item" data-page="analytics">
+    <div class="mob-nav-ico"><i class="bi bi-bar-chart-line"></i></div>
+    Stats
+  </div>
+</div>
+
+<!-- ── MOBILE FAB ──────────────────────────────────────────── -->
+<button class="fab" id="mob-fab" data-page="create" aria-label="Create auction">
+  <i class="bi bi-plus-lg"></i>
+</button>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  MAIN CONTENT                                            ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="content">
+
+  <!-- ── STATS BAR ─────────────────────────────────────────── -->
+  <div class="stats-row stagger fade-in" id="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon c-green">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:var(--glow)"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg>
+      </div>
+      <div>
+        <div class="stat-num" id="s-total" style="color:var(--glow)">—</div>
+        <div class="stat-lbl">Total Auctions</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon c-green"><i class="bi bi-graph-up-arrow" style="color:var(--glow)"></i></div>
+      <div><div class="stat-num" id="s-live" style="color:var(--glow)">—</div><div class="stat-lbl">Live Bids</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon c-purple"><i class="bi bi-people" style="color:var(--purple)"></i></div>
+      <div><div class="stat-num" id="s-bidders" style="color:var(--purple)">—</div><div class="stat-lbl">Total Bidders</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon c-gold"><i class="bi bi-coin" style="color:var(--gold)"></i></div>
+      <div><div class="stat-num" id="s-vol" style="color:var(--gold)">—</div><div class="stat-lbl">Total Volume</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon c-blue"><i class="bi bi-trophy" style="color:var(--blue)"></i></div>
+      <div><div class="stat-num" id="s-completed" style="color:var(--blue)">—</div><div class="stat-lbl">Completed</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon c-red"><i class="bi bi-fire" style="color:var(--red)"></i></div>
+      <div><div class="stat-num" id="s-fees" style="color:var(--red)">—</div><div class="stat-lbl">Fees Earned</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ AUCTIONS PAGE ═══════════════════════════ -->
+  <div class="page active" id="page-auctions">
+    <div class="main-grid">
+      <div>
+        <div class="filter-bar">
+          <div class="filter-tab active" data-filter="active">Active <span class="badge" id="f-active">0</span></div>
+          <div class="filter-tab" data-filter="upcoming">Upcoming <span class="badge" id="f-upcoming">0</span></div>
+          <div class="filter-tab" data-filter="completed">Completed <span class="badge" id="f-completed">0</span></div>
+          <div class="filter-tab" data-filter="cancelled">Cancelled <span class="badge" id="f-cancelled">0</span></div>
+          <div class="search-wrap">
+            <div class="search-wrap-inner">
+              <span class="search-icon"><i class="bi bi-search"></i></span>
+              <input class="search-inp" id="search-inp" placeholder="Search by name or ID…"/>
+            </div>
+          </div>
+        </div>
+        <div class="auction-grid stagger" id="auction-grid">
+          <div class="loading-row">
+            <div class="spin-icon"></div>
+            Loading bids...
+          </div>
+        </div>
+        <!-- Auction pagination -->
+        <div class="auctions-pagination" id="auctions-pagination" style="display:none">
+          <div class="ap-info" id="ap-info">Showing 1–6</div>
+          <div class="ap-btns" id="ap-btns"></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--text3)">Per page:</span>
+            <select id="ap-per-page" class="ra-per-page-sel">
+              <option value="6" selected>6</option>
+              <option value="12">12</option>
+              <option value="24">24</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="sidebar sidebar-desktop">
+        <div class="side-card" id="wallet-card">
+          <div class="side-title">
+            <span><i class="bi bi-wallet2" style="margin-right:5px;color:var(--glow)"></i>Your Wallet</span>
+            <span class="side-link" id="sidebar-view-profile">View Profile →</span>
+          </div>
+          <div id="wallet-body">
+            <div class="empty" style="padding:1.2rem 0">
+              <div class="empty-ico"><i class="bi bi-shield-lock" style="color:var(--text4)"></i></div>
+              <div class="empty-title">Not Connected</div>
+              <button class="btn btn-primary btn-full" style="margin-top:1rem" id="btn-connect-sidebar">
+                <i class="bi bi-wallet2"></i> Connect Wallet
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-card" id="my-stats-card" style="display:none">
+          <div class="side-title"><i class="bi bi-bar-chart" style="margin-right:5px;color:var(--purple)"></i>Your Stats</div>
+          <table class="stats-table">
+            <tr><td>Total Bids</td><td id="ms-bids">0</td></tr>
+            <tr><td>Auctions Won</td><td id="ms-won">0</td></tr>
+            <tr><td>Total Spent</td><td id="ms-spent" style="color:var(--glow)">0 ETH</td></tr>
+            <tr><td>Total Won</td><td id="ms-total-won" style="color:var(--gold)">0 ETH</td></tr>
+            <tr><td>Success Rate</td><td id="ms-rate" style="color:var(--purple)">0%</td></tr>
+          </table>
+        </div>
+
+      </div><!-- /sidebar -->
+    </div>
+  </div>
+
+  <!-- ══════════════ MY BIDS PAGE ════════════════════════════ -->
+  <div class="page" id="page-mybids">
+    <div class="page-header">
+      <div class="page-title">
+        <i class="bi bi-receipt" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--glow)"></i>
+        My Bids
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-export-all">
+        <i class="bi bi-upload"></i> Export All Nonces
+      </button>
+    </div>
+    <div id="mybids-list"></div>
+    <!-- MyBids pagination -->
+    <div class="auctions-pagination" id="mybids-pagination" style="display:none">
+      <div class="ap-info" id="mb-info">Showing 1–6</div>
+      <div class="ap-btns" id="mb-btns"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text3)">Per page:</span>
+        <select id="mb-per-page" class="ra-per-page-sel">
+          <option value="6" selected>6</option>
+          <option value="12">12</option>
+          <option value="24">24</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ CREATE PAGE ═════════════════════════════ -->
+  <div class="page" id="page-create">
+    <div class="page-header">
+      <div class="page-title">
+        <i class="bi bi-plus-circle" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--glow)"></i>
+        Create New Auction
+      </div>
+    </div>
+    <div class="main-grid">
+      <div>
+        <div id="create-wall" class="empty" style="padding:4rem">
+          <div class="empty-ico"><i class="bi bi-building" style="color:var(--text4)"></i></div>
+          <div class="empty-title">Connect wallet to create auctions</div>
+          <button class="btn btn-primary" style="margin-top:1rem" id="create-wall-connect">
+            <i class="bi bi-wallet2"></i> Connect Wallet
+          </button>
+        </div>
+        <div id="create-form" style="display:none">
+          <div class="side-card">
+            <div class="wallet-gate-banner" id="create-wallet-banner" style="display:none">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span>Wallet not connected — <a href="#" id="create-banner-connect" style="color:var(--glow);text-decoration:underline">connect now</a> to deploy on Sepolia</span>
+            </div>
+
+            <div class="inp-row">
+              <label class="inp-lbl"><i class="bi bi-type" style="margin-right:4px"></i> ITEM NAME *</label>
+              <input class="inp" id="cf-name" placeholder="e.g. Bored Ape #7429"/>
+            </div>
+            <div class="inp-row">
+              <label class="inp-lbl"><i class="bi bi-text-left" style="margin-right:4px"></i> DESCRIPTION</label>
+              <textarea class="inp" id="cf-desc" placeholder="Describe what you're auctioning…"></textarea>
+            </div>
+
+            <div class="form-sep"></div>
+
+            <!-- NFT ASSET PICKER — 2 tabs: Auto-Scan + Manual -->
+            <div class="inp-row">
+              <label class="inp-lbl" style="color:var(--glow)">
+                <i class="bi bi-collection" style="margin-right:4px"></i>
+                NFT ASSET (ERC-721) *
+                <span style="font-size:10px;background:rgba(0,158,140,0.12);border:1px solid rgba(0,158,140,0.25);border-radius:4px;padding:1px 6px;margin-left:6px;color:var(--glow)">ON-CHAIN</span>
+              </label>
+
+              <!-- Tab switcher -->
+              <div style="display:flex;gap:6px;margin-bottom:12px">
+                  <button type="button" id="nft-tab-scan" class="nft-tab-btn"
+                  style="flex:1;padding:7px 0;font-size:11px;font-family:var(--font-mono);font-weight:700;
+                         border-radius:var(--r2);border:2px solid var(--glow);background:rgba(0,158,140,0.12);
+                         color:var(--glow);cursor:pointer;transition:all 0.18s;letter-spacing:0.04em">
+                  <i class="bi bi-magic"></i> AUTO SCAN WALLET
+                </button>
+                <button type="button" id="nft-tab-manual" class="nft-tab-btn active"
+                  style="flex:1;padding:7px 0;font-size:11px;font-family:var(--font-mono);font-weight:700;
+                         border-radius:var(--r2);border:2px solid var(--border);background:transparent;
+                         color:var(--text3);cursor:pointer;transition:all 0.18s;letter-spacing:0.04em">
+                  <i class="bi bi-pencil-square"></i> MANUAL INPUT
+                </button>
+              
+              </div>
+
+              <!-- TAB 1: Manual input (hidden by default) -->
+              <div id="nft-panel-manual" style="display:none">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5">
+                  <i class="bi bi-info-circle" style="color:var(--blue);margin-right:4px"></i>
+                  Enter the ERC-721 contract address and Token ID — the app will verify on-chain and show a preview.
+                </div>
+                <div style="display:grid;gap:8px">
+                  <div>
+                    <label class="inp-lbl" style="font-size:10px">CONTRACT ADDRESS *</label>
+                    <input class="inp" id="cf-nft-contract-manual"
+                      placeholder="0x00000000001594C6…"
+                      style="font-family:var(--font-mono);font-size:12px"/>
+                  </div>
+                  <div>
+                    <label class="inp-lbl" style="font-size:10px">TOKEN ID *</label>
+                    <input class="inp" id="cf-nft-tokenid-manual"
+                      placeholder="e.g. 18563969563448308536832432161508398797338507633"
+                      style="font-family:var(--font-mono);font-size:12px"/>
+                  </div>
+                  <button type="button" id="btn-nft-verify" class="btn btn-ghost btn-sm"
+                    style="justify-content:center;gap:6px">
+                    <i class="bi bi-search"></i> Verify &amp; Preview NFT
+                  </button>
+                </div>
+                <!-- Preview box — filled by verifyNft() -->
+                <div id="nft-manual-preview" style="display:none;margin-top:10px;padding:12px;
+                  background:rgba(0,158,140,0.05);border:1px solid rgba(0,158,140,0.2);
+                  border-radius:var(--r2);display:none;gap:12px;align-items:center">
+                  <div id="nft-mp-img" style="width:64px;height:64px;border-radius:var(--r2);
+                    overflow:hidden;background:var(--bg3);flex-shrink:0;display:flex;
+                    align-items:center;justify-content:center;font-size:2rem"><i class="bi bi-image" style="font-size:1.6rem;color:var(--text4)"></i></div>
+                  <div style="min-width:0;flex:1">
+                    <div id="nft-mp-name" style="font-size:13px;font-weight:700;color:var(--text);
+                      overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</div>
+                    <div id="nft-mp-collection" style="font-size:11px;color:var(--text3);
+                      font-family:var(--font-mono);margin-top:2px">—</div>
+                    <div id="nft-mp-tokenid" style="font-size:11px;color:var(--glow);
+                      font-family:var(--font-mono);margin-top:1px">—</div>
+                    <div id="nft-mp-owner" style="font-size:10px;color:var(--text4);margin-top:2px">—</div>
+                  </div>
+                  <div id="nft-mp-status" style="flex-shrink:0;font-size:20px">✅</div>
+                </div>
+              </div>
+
+              <!-- TAB 2: Auto-scan (default active) -->
+              <div id="nft-panel-scan">
+                <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5;display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+                  <span><i class="bi bi-magic" style="color:var(--glow);margin-right:4px"></i>
+                  Automatically scan all ERC-721 tokens in your Sepolia wallet.</span>
+                  <button type="button" class="nft-rescan-btn" id="btn-rescan-nfts">
+                    <i class="bi bi-arrow-clockwise"></i> Rescan
+                  </button>
+                </div>
+                <div id="nft-picker-container" style="min-height:48px">
+                  <div style="font-size:12px;color:var(--text3)">
+                    <i class="bi bi-wallet2" style="margin-right:6px"></i>Connect wallet to load your NFTs.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hidden inputs — actual values used on submit -->
+              <input type="hidden" id="cf-nft-contract"/>
+              <input type="hidden" id="cf-nft-tokenid"/>
+
+              <div style="margin-top:10px;padding:8px 10px;background:rgba(200,150,10,0.06);border:1px solid rgba(200,150,10,0.18);border-radius:var(--r2);font-size:11px;color:var(--text2);display:flex;gap:8px;align-items:flex-start">
+                <i class="bi bi-exclamation-triangle-fill" style="color:var(--gold);flex-shrink:0;margin-top:1px"></i>
+                <span>The NFT will be <strong>approved → transferred to the contract</strong> when you create the auction. Once the auction ends, the winner claims the NFT via <strong>Claim Item</strong>. Losing bidders can <strong>Refund</strong> their ETH deposit.</span>
+              </div>
+            </div>
+
+            <div class="form-sep"></div>
+
+            <div class="inp-row">
+              <label class="inp-lbl"><i class="bi bi-toggles" style="margin-right:4px"></i> AUCTION TYPE</label>
+              <div class="auction-type-toggle" id="auction-type-toggle">
+                <button type="button" class="type-btn active" data-type="public" id="type-btn-public">
+                  <i class="bi bi-globe2"></i> Public
+                </button>
+                <button type="button" class="type-btn" data-type="private" id="type-btn-private">
+                  <i class="bi bi-lock-fill"></i> Private
+                </button>
+              </div>
+            </div>
+
+            <div class="inp-row" id="whitelist-row" style="display:none">
+              <label class="inp-lbl">
+                <i class="bi bi-person-check-fill" style="color:var(--gold)"></i>
+                ALLOWED WALLETS (one per line)
+              </label>
+              <textarea class="inp whitelist-inp" id="cf-whitelist"
+                placeholder="0xAbc123…&#10;0xDef456…&#10;0x789Ghi…"
+                rows="4"></textarea>
+              <div class="whitelist-hint" id="whitelist-count">0 addresses</div>
+            </div>
+
+            <div class="form-sep"></div>
+            <div class="inp-2">
+              <div class="inp-row">
+                <label class="inp-lbl"><i class="bi bi-currency-exchange" style="margin-right:4px"></i> MIN BID (ETH) *</label>
+                <input class="inp" id="cf-price" type="number" step="0.001" placeholder="0.1"/>
+              </div>
+              <div class="inp-row">
+                <label class="inp-lbl"><i class="bi bi-clock" style="margin-right:4px"></i> BIDDING HOURS *</label>
+                <input class="inp" id="cf-bid-hrs" type="number" placeholder="24" min="1"/>
+              </div>
+            </div>
+            <div class="inp-row">
+              <label class="inp-lbl"><i class="bi bi-calendar-event" style="margin-right:4px"></i> START DATE (optional)</label>
+              <input class="inp" id="cf-start-date" type="datetime-local"/>
+              <div class="whitelist-hint" id="start-date-hint" style="margin-top:4px">Leave blank to start immediately after deployment.</div>
+            </div>
+            <div class="oracle-box" id="oracle-box" style="display:none">
+              <div class="oracle-title">
+                <i class="bi bi-robot"></i> Oracle Price Estimate
+              </div>
+              <div class="oracle-body" id="oracle-body"></div>
+            </div>
+            <button class="btn btn-primary btn-full" style="padding:12px;margin-top:0.5rem" id="btn-create-auction">
+              <i class="bi bi-rocket-takeoff"></i> Deploy Sealed Auction
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar sidebar-desktop">
+        <div class="how-mini-card how-inline-card" id="create-how-block">
+          <div class="how-mini-header open-static">
+            <span><i class="bi bi-info-circle" style="color:var(--glow);margin-right:8px"></i><strong>How Creating an Auction Works</strong></span>
+          </div>
+          <div class="how-mini-body" style="display:block">
+            <div class="how-inline-grid" style="grid-template-columns:1fr">
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(0,158,140,0.07);border-color:rgba(0,158,140,0.18)"><i class="bi bi-pencil-fill" style="color:var(--glow)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Set Parameters</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Define item name, min bid, and auction duration. All bids are sealed until reveal phase.</div></div>
+              </div>
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(200,150,10,0.07);border-color:rgba(200,150,10,0.18)"><i class="bi bi-wallet2" style="color:var(--gold)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Sign &amp; Deploy</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">MetaMask will prompt you to sign and pay gas to deploy the auction contract on Sepolia.</div></div>
+              </div>
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(91,63,191,0.07);border-color:rgba(91,63,191,0.18)"><i class="bi bi-broadcast" style="color:var(--purple)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Goes Live</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Auction appears instantly on chain. Bidders can commit sealed bids immediately.</div></div>
+              </div>
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(26,127,193,0.07);border-color:rgba(26,127,193,0.18)"><i class="bi bi-trophy-fill" style="color:var(--blue)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Finalize</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">After reveal phase ends, finalize to settle winner. Losers get deposits back automatically.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BIDWAR SCANNER PAGE ═════════════════════ -->
+  <div class="page" id="page-scanner">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <i class="bi bi-activity" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--red)"></i>
+          BidWar Scanner
+          <span class="live-badge">LIVE</span>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Real-time heat map · Bid velocity · Live pulse feed</div>
+      </div>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="scanner-summary" id="scanner-summary">
+      <div class="scanner-summary-item">
+        <div class="scanner-summary-lbl">🔥 Hot Auctions</div>
+        <div class="scanner-summary-val" id="sc-hot-count" style="color:var(--red)">—</div>
+      </div>
+      <div class="scanner-summary-item">
+        <div class="scanner-summary-lbl">👁 Total Watchers</div>
+        <div class="scanner-summary-val" id="sc-watcher-total" style="color:var(--glow)">—</div>
+      </div>
+      <div class="scanner-summary-item">
+        <div class="scanner-summary-lbl">⚡ Bids/hr (avg)</div>
+        <div class="scanner-summary-val" id="sc-velocity-avg" style="color:var(--gold)">—</div>
+      </div>
+    </div>
+
+    <div class="scanner-layout">
+      <!-- Left: cards grid -->
+      <div>
+        <div class="scanner-header-bar">
+          <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono)">
+            <span id="sc-card-count">0</span> active auctions being tracked
+          </div>
+          <div class="scanner-sort-tabs">
+            <button class="scanner-sort-tab active" data-sort="heat">Heat</button>
+            <button class="scanner-sort-tab" data-sort="bidders">Bidders</button>
+            <button class="scanner-sort-tab" data-sort="time">Time Left</button>
+          </div>
+        </div>
+        <div class="scanner-grid" id="scanner-grid"></div>
+      </div>
+
+      <!-- Right: panel -->
+      <div class="scanner-right-panel">
+        <!-- Live Pulse -->
+        <div class="side-card">
+          <div class="side-title">
+            <span style="display:flex;align-items:center;gap:6px">
+              <i class="bi bi-lightning-charge" style="color:var(--gold)"></i> Live Pulse
+            </span>
+            <span id="pulse-count" class="count-badge">0 events</span>
+          </div>
+          <div id="pulse-feed" class="pulse-feed"></div>
+        </div>
+
+        <!-- Watcher list -->
+        <div class="side-card">
+          <div class="side-title">
+            <span><i class="bi bi-eye" style="font-size:13px;color:var(--glow);margin-right:5px"></i> Most Watched</span>
+          </div>
+          <div id="watcher-list"></div>
+        </div>
+
+        <!-- Velocity chart -->
+        <div class="side-card">
+          <div class="side-title">
+            <span><i class="bi bi-graph-up" style="font-size:13px;color:var(--blue);margin-right:5px"></i> Bid Velocity</span>
+            <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">bids/hr</span>
+          </div>
+          <div id="velocity-chart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════ RECENT ACTIVITY PAGE ═══════════════════════ -->
+  <div class="page" id="page-vault">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <i class="bi bi-clock-history" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--glow)"></i>
+          Recent Activity
+        </div>
+        <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);margin-top:2px" id="ra-summary">—</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-ra-clear">
+        <i class="bi bi-trash3"></i> Clear All
+      </button>
+    </div>
+
+    <div class="ra-page-layout">
+
+      <!-- ── Main feed ─────────────────────────────────────── -->
+      <div class="ra-main">
+
+        <div class="ra-toolbar">
+          <div class="ra-filter-tabs">
+            <button class="ra-filter-btn active" data-ra-filter="all">
+              <i class="bi bi-grid-3x3-gap-fill"></i> All
+              <span class="ra-filter-badge" id="ra-f-all">0</span>
+            </button>
+            <button class="ra-filter-btn" data-ra-filter="bid">
+              <i class="bi bi-receipt-cutoff"></i> Bids
+              <span class="ra-filter-badge bid" id="ra-f-bid">0</span>
+            </button>
+            <button class="ra-filter-btn" data-ra-filter="reveal">
+              <i class="bi bi-trophy-fill"></i> Settled
+              <span class="ra-filter-badge win" id="ra-f-reveal">0</span>
+            </button>
+            <button class="ra-filter-btn" data-ra-filter="auction">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:currentColor"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg> Created
+              <span class="ra-filter-badge auction" id="ra-f-auction">0</span>
+            </button>
+            <button class="ra-filter-btn" data-ra-filter="system">
+              <i class="bi bi-cpu"></i> System
+              <span class="ra-filter-badge system" id="ra-f-system">0</span>
+            </button>
+          </div>
+          <div class="ra-search-wrap">
+            <i class="bi bi-search ra-search-ico"></i>
+            <input class="ra-search-inp" id="ra-search" placeholder="Search activity…"/>
+          </div>
+        </div>
+
+        <div id="ra-list" style="display:flex;flex-direction:column;gap:8px;min-height:200px"></div>
+
+        <div class="ra-pagination" id="ra-pagination">
+          <div class="ra-page-info" id="ra-page-info">Page 1 of 1</div>
+          <div class="ra-page-btns" id="ra-page-btns"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text3)">Per page:</span>
+            <select id="ra-per-page" class="ra-per-page-sel">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Sidebar ───────────────────────────────────────── -->
+      <div class="ra-sidebar sidebar-desktop">
+
+        <div class="side-card">
+          <div class="side-title">
+            <span><i class="bi bi-bar-chart" style="margin-right:5px;color:var(--purple)"></i>Activity Stats</span>
+          </div>
+          <div class="ra-stats-grid">
+            <div class="ra-stat-cell">
+              <div class="ra-stat-val" id="ra-stat-total" style="color:var(--glow)">0</div>
+              <div class="ra-stat-lbl">Total</div>
+            </div>
+            <div class="ra-stat-cell">
+              <div class="ra-stat-val" id="ra-stat-bids" style="color:var(--blue)">0</div>
+              <div class="ra-stat-lbl">Bids</div>
+            </div>
+            <div class="ra-stat-cell">
+              <div class="ra-stat-val" id="ra-stat-reveals" style="color:var(--gold)">0</div>
+              <div class="ra-stat-lbl">Settled</div>
+            </div>
+            <div class="ra-stat-cell">
+              <div class="ra-stat-val" id="ra-stat-auctions" style="color:var(--purple)">0</div>
+              <div class="ra-stat-lbl">Created</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+            Last: <span id="ra-stat-last" style="color:var(--text2)">—</span>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-title">
+            <span><i class="bi bi-clock" style="margin-right:5px;color:var(--gold)"></i>Timeline</span>
+          </div>
+          <div id="ra-timeline" style="display:flex;flex-direction:column;gap:2px;margin-top:4px"></div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-title"><i class="bi bi-shield-lock" style="margin-right:5px;color:var(--glow)"></i>Privacy</div>
+          <p style="font-size:12px;color:var(--text2);line-height:1.7">
+            All interactions are recorded. Bids, settlements, and system events appear here.
+          </p>
+          <div style="margin-top:10px;padding:8px 10px;background:rgba(0,158,140,0.06);border:1px solid rgba(0,158,140,0.15);border-radius:var(--r2)">
+            <div style="font-size:10px;color:var(--glow);font-family:var(--font-mono);font-weight:700;letter-spacing:0.06em">🔒 PRIVATE</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">Linked to your wallet address</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ ANALYTICS PAGE ══════════════════════════ -->
+  <div class="page" id="page-analytics">
+    <div class="page-header">
+      <div class="page-title">
+        <i class="bi bi-bar-chart-line" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--blue)"></i>
+        Platform Analytics
+      </div>
+    </div>
+    <div class="page-content-centered">
+      <div>
+        <div class="analytics-grid">
+          <div class="chart-card">
+            <div class="chart-title">
+              <span><i class="bi bi-calendar3" style="margin-right:6px;color:var(--glow)"></i>Auction Activity (Last 7 Days)</span>
+            </div>
+            <div class="bar-chart" id="chart-activity"></div>
+            <div class="bar-lbl-row" id="chart-labels"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span><i class="bi bi-pie-chart" style="margin-right:6px;color:var(--purple)"></i>Auctions by Phase</span>
+            </div>
+            <div id="phase-stats" style="margin-top:0.5rem"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+          <div class="chart-card">
+            <div class="chart-title">
+              <span><i class="bi bi-clock-history" style="margin-right:6px;color:var(--gold)"></i>Your Bid History</span>
+            </div>
+            <div id="bid-history-list"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <span><i class="bi bi-gem" style="margin-right:6px;color:var(--red)"></i>Top Auctions by Value</span>
+            </div>
+            <div id="top-auctions-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ DISPUTES PAGE ═══════════════════════════ -->
+  <div class="page" id="page-disputes">
+    <div class="page-header">
+      <div class="page-title">
+        <i class="bi bi-flag" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--red)"></i>
+        Dispute Center
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-open-dispute">
+        <i class="bi bi-plus-circle"></i> Open Dispute
+      </button>
+    </div>
+    <div class="main-grid">
+      <div>
+        <div class="dispute-card">
+          <div class="dispute-badge open">OPEN</div>
+          <div style="font-family:var(--font-head);font-weight:700;margin-bottom:4px;font-size:0.9rem;letter-spacing:0.04em;margin-top:8px">CryptoPunk #3886 — Reveal Discrepancy</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Bidder claims reveal tx failed due to network congestion. Requesting extension.</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+            <i class="bi bi-clock" style="margin-right:4px"></i>Opened 2h ago · Auction #2
+          </div>
+        </div>
+        <div class="dispute-card">
+          <div class="dispute-badge resolved">RESOLVED</div>
+          <div style="font-family:var(--font-head);font-weight:700;margin-bottom:4px;font-size:0.9rem;letter-spacing:0.04em;margin-top:8px">Azuki #1337 — Winner Dispute</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Resolved: Winner confirmed, item delivered.</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+            <i class="bi bi-check-circle" style="margin-right:4px"></i>Resolved 3h ago · Auction #3
+          </div>
+        </div>
+      </div>
+      <div class="sidebar sidebar-desktop">
+        <div class="how-mini-card how-inline-card">
+          <div class="how-mini-header open-static">
+            <span><i class="bi bi-info-circle" style="color:var(--red);margin-right:8px"></i><strong>How Disputes Work</strong></span>
+          </div>
+          <div class="how-mini-body" style="display:block">
+            <div class="how-inline-grid" style="grid-template-columns:1fr">
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(217,53,96,0.07);border-color:rgba(217,53,96,0.18)"><i class="bi bi-flag-fill" style="color:var(--red)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Open Dispute</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">File a dispute if reveal failed due to network issues or contract bug. Include tx hash evidence.</div></div>
+              </div>
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(200,150,10,0.07);border-color:rgba(200,150,10,0.18)"><i class="bi bi-people-fill" style="color:var(--gold)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">DAO Review</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Disputes reviewed by Rialo DAO. On-chain evidence required. Decision is binding.</div></div>
+              </div>
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(0,158,140,0.07);border-color:rgba(0,158,140,0.18)"><i class="bi bi-check-circle-fill" style="color:var(--glow)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Resolution</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Resolved disputes may result in deposit release or extend reveal window. Status shown here.</div></div>
+              </div>
+              <div class="how-inline-item">
+                <div class="how-inline-icon" style="background:rgba(26,127,193,0.07);border-color:rgba(26,127,193,0.18)"><i class="bi bi-clock-fill" style="color:var(--blue)"></i></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Timeframe</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Disputes must be filed within 48h of reveal phase ending. Late submissions rejected.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ LEADERBOARD PAGE ════════════════════════ -->
+  <div class="page" id="page-leaderboard">
+    <div class="page-header">
+      <div class="page-title">
+        <i class="bi bi-trophy" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--gold)"></i>
+        Leaderboard
+      </div>
+    </div>
+    <div class="page-content-centered">
+      <div class="lb-grid-wrap">
+        <div class="side-card">
+          <div class="side-title">
+            <i class="bi bi-coin" style="font-size:13px;color:var(--gold);margin-right:5px"></i>
+            Top Bidders by Volume
+          </div>
+          <div id="lb-bidders"></div>
+        </div>
+        <div class="side-card">
+          <div class="side-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:13px;height:13px;vertical-align:-0.125em;fill:var(--glow)"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg><span style="margin-right:5px"></span>
+            Top Auction Creators
+          </div>
+          <div id="lb-creators"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ DOCS PAGE ════════════════════════════════ -->
+  <div class="page" id="page-docs">
+    <div class="page-header">
+      <div class="page-title">
+        <i class="bi bi-book" style="font-size:1.1rem;vertical-align:middle;margin-right:8px;color:var(--purple)"></i>
+        Documentation
+      </div>
+    </div>
+    <div class="main-grid">
+      <div>
+        <div class="how-grid">
+          <div class="how-card">
+            <div class="how-icon-wrap">
+              <i class="bi bi-lock-fill"></i>
+              <div class="how-num">1</div>
+            </div>
+            <div class="how-title">Commit Phase</div>
+            <div class="how-desc">
+              Submit <code class="code-inline">keccak256(amount, nonce, address)</code> on-chain.
+              Your actual bid stays completely hidden until the reveal window opens.
+              A deposit locks your position — forfeited if you don't reveal.
+            </div>
+            <div class="how-tags">
+              <span class="how-tag">On-Chain</span>
+              <span class="how-tag">Sealed</span>
+              <span class="how-tag">Deposit</span>
+            </div>
+          </div>
+
+          <div class="how-card">
+            <div class="how-icon-wrap">
+              <i class="bi bi-eye-fill"></i>
+              <div class="how-num">2</div>
+            </div>
+            <div class="how-title">Reveal Phase</div>
+            <div class="how-desc">
+              After bidding closes, submit your plaintext amount + nonce.
+              The contract verifies your hash matches. Invalid or missing reveal
+              forfeits your deposit. Highest valid bid wins the auction.
+            </div>
+            <div class="how-tags">
+              <span class="how-tag">Verify Hash</span>
+              <span class="how-tag">Highest Wins</span>
+              <span class="how-tag">Nonce Key</span>
+            </div>
+          </div>
+
+          <div class="how-card">
+            <div class="how-icon-wrap">
+              <i class="bi bi-shield-lock-fill"></i>
+              <div class="how-num">3</div>
+            </div>
+            <div class="how-title">REX Privacy</div>
+            <div class="how-desc">
+              Route through the REX relay to mask your identity at the transaction level.
+              Zero-knowledge proofs verify bid validity without ever exposing
+              your on-chain address to other bidders.
+            </div>
+            <div class="how-tags">
+              <span class="how-tag">ZK Proof</span>
+              <span class="how-tag">REX Relay</span>
+              <span class="how-tag">Anonymous</span>
+            </div>
+          </div>
+
+          <div class="how-card">
+            <div class="how-icon-wrap">
+              <i class="bi bi-trophy-fill"></i>
+              <div class="how-num">4</div>
+            </div>
+            <div class="how-title">Settlement</div>
+            <div class="how-desc">
+              Winner pays the winning amount and receives the item.
+              All losing bidders get their full deposits refunded automatically.
+              Any excess deposit over the winning bid is also returned instantly.
+            </div>
+            <div class="how-tags">
+              <span class="how-tag">Auto Refund</span>
+              <span class="how-tag">Winner Claims</span>
+              <span class="how-tag">On-Chain</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- <div class="sidebar sidebar-desktop">
+        <div class="side-card">
+          <div class="side-title">
+            <span><i class="bi bi-clock-history" style="font-size:13px;color:var(--glow);margin-right:5px"></i>Recent Activity</span>
+            <span class="side-link" id="sidebar-view-all-activity">View All →</span>
+          </div>
+          <div id="how-activity-feed" style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:12px;color:var(--text3);padding:0.5rem 0">No activity yet.</div>
+          </div>
+        </div>
+      </div> -->
+    </div>
+  </div>
+
+</div><!-- /#content -->
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:22px;height:22px;fill:var(--glow)"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg>
+        <span class="footer-logo-text">SecretBid</span>
+      </div>
+      <p class="footer-tagline">Sealed-bid NFT auctions on Sepolia.<br>Privacy-first. On-chain. Trustless.</p>
+    </div>
+
+    <div class="footer-links">
+      <div class="footer-col">
+        <div class="footer-col-title">Protocol</div>
+        <a href="#" id="footer-contract-link">
+          <i class="bi bi-file-earmark-code"></i> Smart Contract
+        </a>
+        <a href="#" target="_blank" rel="noopener">
+          <i class="bi bi-book"></i> Docs
+        </a>
+        <a href="#" target="_blank" rel="noopener">
+          <i class="bi bi-shield-lock"></i> Security
+        </a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Community</div>
+        <a href="#" target="_blank" rel="noopener">
+          <i class="bi bi-github"></i> GitHub
+        </a>
+        <a href="#" target="_blank" rel="noopener">
+          <i class="bi bi-twitter-x"></i> Twitter
+        </a>
+        <a href="#" target="_blank" rel="noopener">
+          <i class="bi bi-discord"></i> Discord
+        </a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Network</div>
+        <div class="footer-badge-row">
+          <span class="footer-badge green"><span class="footer-dot"></span>Sepolia Testnet</span>
+        </div>
+        <div class="footer-badge-row">
+          <span class="footer-badge purple">REX Privacy v2.1</span>
+        </div>
+        <div class="footer-badge-row">
+          <span class="footer-badge blue">ERC-721 / ERC-1155</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span>© 2025 SecretBid · Built on Rialo</span>
+    <span class="footer-sep">·</span>
+    <span>No warranties. Use at your own risk.</span>
+    <span class="footer-sep">·</span>
+    <a href="#">Privacy</a>
+    <span class="footer-sep">·</span>
+    <a href="#">Terms</a>
+  </div>
+</footer>
+
+<!-- ── TOAST ──────────────────────────────────────────────── -->
+<div id="toast-wrap"></div>
+
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  MODALS                                                  ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+
+<!-- Wallet Confirm -->
+<div class="overlay" id="overlay-wallet">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Connect Wallet</div>
+      <button class="modal-close" id="close-overlay-wallet">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div class="wc-logo"><i class="bi bi-shield-lock-fill"></i></div>
+      <div style="font-family:var(--font-head);font-size:1.05rem;font-weight:700;margin-bottom:0.4rem;letter-spacing:0.06em">SecretBid</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:1.2rem">Confirm connection to this dApp</div>
+      <div class="wc-addr" id="wc-addr">—</div>
+      <ul class="wc-list">
+        <li>
+          <span class="wc-check"><i class="bi bi-check-circle-fill" style="color:var(--glow)"></i></span>
+          View wallet balance and activity
+        </li>
+        <li>
+          <span class="wc-check"><i class="bi bi-check-circle-fill" style="color:var(--glow)"></i></span>
+          Request transaction signatures
+        </li>
+        <li>
+          <span class="wc-check"><i class="bi bi-check-circle-fill" style="color:var(--glow)"></i></span>
+          Address cached locally (never uploaded)
+        </li>
+        <li>
+          <span class="wc-check"><i class="bi bi-x-circle-fill" style="color:var(--red)"></i></span>
+          Cannot move funds without approval
+        </li>
+      </ul>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="btn btn-ghost" id="btn-wallet-cancel">Cancel</button>
+        <button class="btn btn-primary" id="btn-wallet-confirm">
+          <i class="bi bi-wallet2"></i> Connect &amp; Sign In
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auction Detail -->
+<div class="overlay" id="overlay-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div id="md-phase-badge" class="md-phase-badge phase-0" style="display:inline-flex;margin-bottom:6px">
+          <div class="pulse" style="width:5px;height:5px"></div>
+          <span id="md-phase-txt">BIDDING</span>
+        </div>
+        <div class="modal-title" id="md-title">—</div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)" id="md-owner">—</div>
+        <div style="margin-top:6px" id="md-access-wrap"></div>
+      </div>
+      <button class="modal-close" id="close-overlay-detail">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-img" id="md-img">
+        <i class="bi bi-bullseye" style="font-size:5rem;color:var(--text4)"></i>
+      </div>
+      <p id="md-desc" style="font-size:13px;color:var(--text2);margin-bottom:1.2rem;line-height:1.6"></p>
+      <div class="d-grid">
+        <div class="d-cell"><div class="d-lbl">Min Bid</div><div class="d-val g" id="md-minbid">—</div></div>
+        <div class="d-cell"><div class="d-lbl">Bidders</div><div class="d-val" id="md-bidders">—</div></div>
+        <div class="d-cell"><div class="d-lbl">Bidding Ends</div><div class="d-val" id="md-bidend" data-ts="0">—</div></div>
+        <div class="d-cell"><div class="d-lbl">Starts</div><div class="d-val" style="color:var(--blue)" id="md-bidstart">—</div></div>
+        <div class="d-cell"><div class="d-lbl">Auction ID</div><div class="d-val" id="md-id">—</div></div>
+        <div class="d-cell"><div class="d-lbl">Network</div><div class="d-val" style="color:var(--blue)">Sepolia</div></div>
+      </div>
+      <div id="md-winner-wrap" style="display:none" class="winner-box">
+        <div class="winner-box-title">
+          <i class="bi bi-trophy-fill"></i> Auction Settled
+        </div>
+        <div class="winner-addr" id="md-winner">—</div>
+        <div style="color:var(--gold);font-family:var(--font-mono);font-size:0.95rem;margin-top:4px" id="md-winning-bid">—</div>
+      </div>
+      <div class="oracle-box" id="modal-oracle-box" style="display:none;margin-bottom:1rem">
+        <div class="oracle-title">
+          <i class="bi bi-robot"></i> Win Probability Oracle
+        </div>
+        <div class="oracle-body" id="modal-oracle-body"></div>
+      </div>
+      <div id="md-actions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TX Pending -->
+<div class="overlay" id="overlay-tx">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div class="modal-body" style="padding:2rem">
+      <div id="tx-ico" style="font-size:3rem;margin-bottom:1rem">
+        <i class="bi bi-hourglass-split" style="color:var(--gold)"></i>
+      </div>
+      <div class="modal-title" id="tx-title" style="margin-bottom:0.5rem">Processing</div>
+      <div id="tx-msg" style="font-size:12px;color:var(--text2);margin-bottom:1.5rem;font-family:var(--font-mono);word-break:break-all;line-height:1.5"></div>
+      <div id="tx-footer"><div class="spin-icon" style="margin:0 auto"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCRIPTS ──────────────────────────────────────────────── -->
+<script>
+// Cursor glow
+const cg = document.getElementById('cursor-glow');
+if (cg) {
+  document.addEventListener('mousemove', e => {
+    cg.style.opacity = '1';
+    cg.style.left = e.clientX + 'px';
+    cg.style.top  = e.clientY + 'px';
+  });
+  document.addEventListener('mouseleave', () => cg.style.opacity = '0');
+}
+
+// Banner close
+const bannerEl = document.getElementById('top-banner');
+const bannerClose = document.getElementById('banner-close');
+if (bannerEl && bannerClose) {
+  bannerClose.addEventListener('click', () => {
+    bannerEl.style.transition = 'max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease';
+    bannerEl.style.overflow = 'hidden';
+    bannerEl.style.maxHeight = bannerEl.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      bannerEl.style.maxHeight = '0';
+      bannerEl.style.opacity = '0';
+      bannerEl.style.paddingTop = '0';
+      bannerEl.style.paddingBottom = '0';
+    });
+    setTimeout(() => bannerEl.style.display = 'none', 380);
+  });
+}
+
+// Mobile FAB → create page
+const mobFab = document.getElementById('mob-fab');
+if (mobFab) {
+  mobFab.addEventListener('click', function() {
+    const page = this.dataset.page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page)?.classList.add('active');
+    document.querySelectorAll('.mob-nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.page === page);
+    });
+  });
+}
+
+// ── LIVE ACTIVITY TICKER — Firebase realtime ──────────────────
+// Ticker khởi động sau khi app.ts load xong và Firebase sẵn sàng
+// Dùng window.__tickerInit được gọi từ app.ts, hoặc tự poll
+(function() {
+  const track = document.getElementById('ticker-track');
+  if (!track) return;
+
+  // ── Config ────────────────────────────────────────────────
+  const MAX_ITEMS = 30; // số event tối đa lấy từ Firebase
+  const FALLBACK_DELAY = 4000; // ms chờ Firebase trước khi dùng placeholder
+
+  // ── Helpers ───────────────────────────────────────────────
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 5)  return 'just now';
+    if (diff < 60) return diff + 's ago';
+    const m = Math.floor(diff / 60);
+    if (m < 60) return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    return Math.floor(h / 24) + 'd ago';
+  }
+
+  const TYPE_MAP = {
+    bid:          { cls:'bid',   icon:'<i class="bi bi-lightning-charge-fill"></i>' },
+    create:       { cls:'new',   icon:'<i class="bi bi-plus-circle-fill"></i>' },
+    finalized:    { cls:'win',   icon:'<i class="bi bi-trophy-fill"></i>' },
+    nft_claim:    { cls:'claim', icon:'<i class="bi bi-bag-check-fill"></i>' },
+    eth_received: { cls:'claim', icon:'<i class="bi bi-cash-stack"></i>' },
+    connect:      { cls:'watch', icon:'<i class="bi bi-wallet2"></i>' },
+    refund:       { cls:'watch', icon:'<i class="bi bi-arrow-counterclockwise"></i>' },
+    transfer:     { cls:'claim', icon:'<i class="bi bi-send-fill"></i>' },
+  };
+
+  function buildSentence(it) {
+    // For bid events, strip any leaked ETH amount from detail
+    const raw = it.detail || it.text || '';
+    if (it.type === 'bid') {
+      return raw.replace(/placed a bid of [\d.]+ ETH on /i, 'placed a sealed bid on ')
+                .replace(/ of [\d.]+ ETH /i, ' ');
+    }
+    return raw;
+  }
+
+  function buildTickerItem(it) {
+    const meta = TYPE_MAP[it.type] || { cls:'watch', icon:'<i class="bi bi-activity"></i>' };
+    return `<span class="ticker-item">
+      <span class="ticker-icon ${meta.cls}">${meta.icon}</span>
+      ${buildSentence(it)}
+      <span class="ticker-sep"></span>
+      <span class="ticker-time">${timeAgo(it.ts)}</span>
+    </span>`;
+  }
+
+  function renderTicker(items) {
+    if (!items.length) return;
+    const html = items.map(buildTickerItem).join('');
+    track.innerHTML = html + html; // double cho seamless loop
+    // Điều chỉnh tốc độ theo số lượng item
+    const duration = Math.max(30, items.length * 4);
+    track.style.animationDuration = duration + 's';
+  }
+
+  // ── Kết nối Firebase — chờ app.ts khởi tạo db ─────────────
+  let attempts = 0;
+  function tryConnectFirebase() {
+    attempts++;
+    const db          = window.__fbDb;
+    const whr         = window.__fbWhere;
+    const col         = window.__fbCollection;
+    const qry         = window.__fbQuery;
+    const ord         = window.__fbOrderBy;
+    const lim         = window.__fbLimit;
+    const snap        = window.__fbOnSnapshot;
+
+    if (!db || !col || !snap || !whr) {
+      if (attempts < 30) { setTimeout(tryConnectFirebase, 500); }
+      else console.warn('[Ticker] Firebase không khởi tạo được sau 15s');
+      return;
+    }
+
+    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const q = qry(col(db, 'activity'), whr('ts', '>='  , threeDaysAgo), ord('ts', 'desc'), lim(MAX_ITEMS));
+
+    snap(q, (snapshot) => {
+      const items = [];
+      snapshot.forEach(d => { const it = d.data(); if (it.type !== 'bid') items.push(it); });
+      items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      if (items.length > 0) renderTicker(items);
+    }, (err) => {
+      console.warn('[Ticker] Firestore error:', err.message);
+    });
+  }
+
+  // Bắt đầu sau khi DOM ready, cho app.ts thời gian boot
+  setTimeout(tryConnectFirebase, 1500);
+})();
+
+
+document.querySelectorAll('.stat-card').forEach((card, i) => {
+  card.style.animationDelay = (i * 0.05) + 's';
+  card.style.animation = 'fadeUp 0.4s ease both';
+  card.style.animationDelay = (i * 0.06) + 's';
+});
+</script>
+
+<!-- Load app logic last -->
+<script type="module" src="./src/app.ts"></script>
+</body>
+</html>
