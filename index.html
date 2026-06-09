@@ -96,12 +96,22 @@
     <button class="nav-tab" data-page="leaderboard">
       <i class="bi bi-trophy"></i> Leaderboard
     </button>
-    <button class="nav-tab" data-page="disputes">
-      <i class="bi bi-exclamation-triangle"></i> Disputes
-    </button>
-    <button class="nav-tab" data-page="docs">
-      <i class="bi bi-book"></i> Docs
-    </button>
+    <div class="nav-dropdown" id="nav-more-dropdown">
+      <button class="nav-tab nav-dropdown-trigger" id="nav-more-btn" aria-haspopup="true" aria-expanded="false">
+        <i class="bi bi-three-dots"></i> More
+        <i class="bi bi-chevron-down nav-dropdown-chevron"></i>
+      </button>
+      <div class="nav-dropdown-menu" id="nav-more-menu" role="menu">
+        <button class="nav-dropdown-item" data-page="disputes" role="menuitem">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span>Disputes</span>
+        </button>
+        <button class="nav-dropdown-item" data-page="docs" role="menuitem">
+          <i class="bi bi-book"></i>
+          <span>Docs</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="nav-right">
@@ -1159,6 +1169,79 @@
 </div>
 
 <!-- ── SCRIPTS ──────────────────────────────────────────────── -->
+<script>
+// ── NAV DROPDOWN (More menu) ──────────────────────────────────
+(function() {
+  const dropdown = document.getElementById('nav-more-dropdown');
+  const btn      = document.getElementById('nav-more-btn');
+  const menu     = document.getElementById('nav-more-menu');
+  if (!dropdown || !btn || !menu) return;
+
+  function openMenu() {
+    dropdown.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    dropdown.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMenu() {
+    dropdown.classList.contains('open') ? closeMenu() : openMenu();
+  }
+
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleMenu();
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!dropdown.contains(e.target)) closeMenu();
+  });
+
+  // Keyboard: close on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeMenu();
+  });
+
+  // Handle item clicks — navigate page & mark active
+  menu.querySelectorAll('.nav-dropdown-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      const page = this.dataset.page;
+      closeMenu();
+
+      // Deactivate all nav-tabs
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+      // Deactivate all dropdown items
+      menu.querySelectorAll('.nav-dropdown-item').forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+
+      // Mark trigger button as active
+      btn.classList.add('active');
+
+      // Switch page (same logic used by the rest of the app)
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('page-' + page);
+      if (target) target.classList.add('active');
+
+      // Sync mobile nav
+      document.querySelectorAll('.mob-nav-item').forEach(function(mi) {
+        mi.classList.toggle('active', mi.dataset.page === page);
+      });
+    });
+  });
+
+  // When a regular nav-tab is clicked, clear dropdown active state
+  document.querySelectorAll('.nav-tab:not(.nav-dropdown-trigger)').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      btn.classList.remove('active');
+      menu.querySelectorAll('.nav-dropdown-item').forEach(i => i.classList.remove('active'));
+    });
+  });
+})();
+</script>
+
 <script>
 // Cursor glow
 const cg = document.getElementById('cursor-glow');
