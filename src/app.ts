@@ -1,17 +1,4 @@
-/**
- * ╔══════════════════════════════════════════════════════════════════╗
- * ║  SecretBid — app.ts                                              ║
- * ║  Full logic: Wallet auth · Firebase · Sepolia contract           ║
- * ║  + BidWar Scanner · Nonce Vault · Win-Probability Oracle         ║
- * ╚══════════════════════════════════════════════════════════════════╝
- *
- *  Build:  tsc app.ts --target ES2020 --module ES2020 --outFile app.js
- *  Or Vite: rename to app.ts, import in main.ts
- */
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ETHERS v6 — imported directly (do NOT use window.ethers — breaks with Vite)
-// ─────────────────────────────────────────────────────────────────────────────
 import {
   BrowserProvider,
   Contract,
