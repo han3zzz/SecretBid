@@ -5138,9 +5138,12 @@ function startScanner(): void {
     const events = (Object.values(data) as any[]).sort((a,b) => (b.ts||0) - (a.ts||0));
     renderPulseFeed(events.slice(0, 20));
     const now = Date.now();
+    // Reset trước khi tính lại — tránh cộng dồn mỗi lần snapshot fire
+    S.bidVelocities = {};
     events.forEach(e => {
-      if (now - e.ts < 3600000) {
-        S.bidVelocities[e.auctionId] = (S.bidVelocities[e.auctionId] || 0) + 1;
+      if (e.event === 'bid' && e.ts && (now - e.ts) < 3_600_000) {
+        const key = String(e.auctionId);
+        S.bidVelocities[key] = (S.bidVelocities[key] || 0) + 1;
       }
     });
     renderScannerGrid();
