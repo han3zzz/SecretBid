@@ -1,17 +1,3 @@
-/**
- * ╔══════════════════════════════════════════════════════════════════╗
- * ║  SecretBid — app.ts                                              ║
- * ║  Full logic: Wallet auth · Firebase · Sepolia contract           ║
- * ║  + BidWar Scanner · Nonce Vault · Win-Probability Oracle         ║
- * ╚══════════════════════════════════════════════════════════════════╝
- *
- *  Build:  tsc app.ts --target ES2020 --module ES2020 --outFile app.js
- *  Or Vite: rename to app.ts, import in main.ts
- */
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  ETHERS v6 — imported directly (do NOT use window.ethers — breaks with Vite)
-// ─────────────────────────────────────────────────────────────────────────────
 import {
   BrowserProvider,
   Contract,
@@ -1388,7 +1374,7 @@ async function openDetail(id: number | string): Promise<void> {
       (bidStartEl as HTMLElement).dataset.ts = String(a.biddingStart);
     } else if (a.biddingStart) {
       // Start time has passed
-      bidStartEl.textContent = new Date(a.biddingStart * 1000).toLocaleString('vi-VN', {
+      bidStartEl.textContent = new Date(a.biddingStart * 1000).toLocaleString('en-US', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
       });
       (bidStartEl as HTMLElement).dataset.ts = '';
@@ -1540,7 +1526,7 @@ function renderDetailActions(a: Auction, phase: 0|1|2): void {
 
   // ── UPCOMING check — auction not yet started ────────────────────────────
   if (isUpcoming(a)) {
-    const startStr = new Date(a.biddingStart! * 1000).toLocaleString('vi-VN', {
+    const startStr = new Date(a.biddingStart! * 1000).toLocaleString('en-US', {
       dateStyle: 'medium', timeStyle: 'short',
     });
     const countdown = formatCountdown(a.biddingStart!);
@@ -1946,7 +1932,7 @@ async function handleBid(auctionId: number | string): Promise<void> {
   }
   // Guard: auction not yet started (biddingStart in the future)
   if (a && a.biddingStart && a.biddingStart > Math.floor(Date.now() / 1000)) {
-    const startStr = new Date(a.biddingStart * 1000).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+    const startStr = new Date(a.biddingStart * 1000).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' });
     toast('Not Started Yet', `Auction starts at ${startStr}.`, 'err');
     return;
   }
@@ -1994,9 +1980,12 @@ async function handleBid(auctionId: number | string): Promise<void> {
       }
     } catch {}
     await fbUpdate(`auctions/${fbAuctionKey}`, { totalBidders: freshBidderCount });
+    // commitTimestamp — used for tie-breaking (first commit wins)
+    const commitTs = Date.now();
     await fbWrite(`bids/${fbAuctionKey}/${S.wallet.address.toLowerCase()}`, {
       address: S.wallet.address, amountEth: String(amt),
-      refunded: false, ts: Date.now(),
+      refunded: false, ts: commitTs,
+      commitTimestamp: commitTs,
       txHash,
     });
     await fbPush('activity', {
@@ -3649,6 +3638,35 @@ async function syncMyBidsOnChain(): Promise<void> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  TIE-LOSS INFO CACHE
+//  Maps auctionFbKey → { winnerAddr, winnerCommitTs, isTie }
+//  Populated lazily when a "Lost" card is rendered and my bid = winning bid.
+// ─────────────────────────────────────────────────────────────────────────────
+const _tieLossCache: Record<string, { winnerAddr: string; winnerCommitTs: number; isTie: boolean }> = {};
+
+/**
+ * Fetch the winner's bid record from Firebase to get their commitTimestamp.
+ * Used to show "Lost because winner committed at HH:MM:SS" on tie-loss cards.
+ */
+async function fetchWinnerCommitInfo(fbKey: string, winnerAddr: string): Promise<void> {
+  if (_tieLossCache[fbKey]) return; // already cached
+  if (!FB_CONFIGURED || !winnerAddr || winnerAddr === '0x0000000000000000000000000000000000000000') return;
+  try {
+    const data = await fbRead(`bids/${fbKey}/${winnerAddr.toLowerCase()}`);
+    if (!data) return;
+    _tieLossCache[fbKey] = {
+      winnerAddr,
+      winnerCommitTs: data.commitTimestamp || data.ts || 0,
+      isTie: true,
+    };
+    // Re-render My Bids so the card updates with tie info
+    if (document.getElementById('page-bids')?.classList.contains('active')) {
+      renderMyBids();
+    }
+  } catch {}
+}
+
 function renderMyBids(): void {
   const el    = document.getElementById('mybids-list')!;
   const pagEl = document.getElementById('mybids-pagination')!;
@@ -3988,18 +4006,76 @@ function renderMyBids(): void {
     const claimDl  = a?.claimDeadline || (a?.finalizedAt ? a.finalizedAt + 3*24*3600*1000 : 0);
     const claimExp = claimDl > 0 && Date.now() > claimDl;
 
+    // ── Tie-loss detection ──
+    // If I lost but my bid equals the winning bid → I lost due to tie (later commit)
+    const isLost      = !isMyWin && hasWinner && (phase === 2 || !!a?.finalized);
+    const myBidFloat  = parseFloat(amount || '0');
+    const winBidFloat = parseFloat(a?.winningBid || '0');
+    const isTieLoss   = isLost && winBidFloat > 0 && Math.abs(myBidFloat - winBidFloat) < 0.000001;
+
+    // If tie-loss and not yet cached → fetch winner commit time in background
+    if (isTieLoss && a?.winner && !_tieLossCache[key]) {
+      fetchWinnerCommitInfo(key, a.winner);
+    }
+    const tieInfo     = isTieLoss ? _tieLossCache[key] : null;
+    const winnerCommitStr = tieInfo?.winnerCommitTs
+      ? new Date(tieInfo.winnerCommitTs).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+      : null;
+    const winnerCommitDateStr = tieInfo?.winnerCommitTs
+      ? new Date(tieInfo.winnerCommitTs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : null;
+    const myCommitStr = ts
+      ? new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+      : null;
+    const myCommitDateStr = ts
+      ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : null;
+
     // ── Status badge ──
     let statusBadge = '';
     if (isMyWin && !a?.itemClaimed && !claimExp)
       statusBadge = `<span class="mb-status-badge mb-status-won">🏆 Won</span>`;
     else if (isMyWin && a?.itemClaimed)
       statusBadge = `<span class="mb-status-badge mb-status-claimed">✅ Claimed</span>`;
+    else if (isTieLoss)
+      statusBadge = `<span class="mb-status-badge mb-status-lost" title="Same bid as winner but committed later">❌ Tie loss</span>`;
     else if (!isMyWin && hasWinner && (phase === 2 || a?.finalized))
       statusBadge = `<span class="mb-status-badge mb-status-lost">❌ Lost</span>`;
     else if (phase === 0)
       statusBadge = `<span class="mb-status-badge mb-status-live">🔴 Live</span>`;
     else if (phase === 1)
       statusBadge = `<span class="mb-status-badge mb-status-ended">⏳ Ended</span>`;
+
+    // ── Tie-loss info block ──
+    const tieLossBlock = isTieLoss ? `
+    <div style="margin-top:8px;padding:8px 10px;background:rgba(239,68,68,0.07);border:0.5px solid rgba(239,68,68,0.25);border-radius:var(--r2);font-family:var(--font-mono);font-size:10.5px;line-height:1.7">
+      <div style="color:var(--red);font-weight:600;margin-bottom:4px">⚠️ Tie loss — same bid, later commit</div>
+      <div style="color:var(--text2)">
+        Your bid:
+        <span style="color:var(--glow)">${myBidFloat.toFixed(4)} ETH</span>
+        · Committed at
+        <span style="color:var(--text1)">${myCommitStr || '—'}</span>
+        <span style="color:var(--text3)">(${myCommitDateStr || '—'})</span>
+      </div>
+      <div style="color:var(--text2)">
+        Winner:
+        <span style="color:var(--gold)">${a?.winner ? shortAddr(a.winner) : '—'}</span>
+        · Committed at
+        <span style="color:var(--text1)">${winnerCommitStr
+          ? `<span style="color:var(--green)">${winnerCommitStr}</span>`
+          : '<span style="color:var(--text3)">loading…</span>'}
+        </span>
+        ${winnerCommitDateStr ? `<span style="color:var(--text3)">(${winnerCommitDateStr})</span>` : ''}
+      </div>
+      ${winnerCommitStr && myCommitStr && tieInfo?.winnerCommitTs && ts ? (() => {
+        const diffMs  = ts - tieInfo.winnerCommitTs;
+        const diffSec = Math.abs(Math.round(diffMs / 1000));
+        const diffMin = Math.floor(diffSec / 60);
+        const remSec  = diffSec % 60;
+        const diffStr = diffMin > 0 ? `${diffMin}m ${remSec}s` : `${diffSec}s`;
+        return `<div style="color:var(--text3);margin-top:2px">You committed <span style="color:var(--red)">${diffStr} later</span></div>`;
+      })() : ''}
+    </div>` : '';
 
     // ── Action buttons ──
     let actionBtns = '';
@@ -4075,6 +4151,7 @@ function renderMyBids(): void {
           <div class="s-line">NONCE: <span style="font-size:10px;word-break:break-all">${e.nonce}</span></div>
           ${e.commitment ? `<div class="s-line">COMMITMENT: <span style="font-size:10px">${e.commitment.slice(0,28)}…</span></div>` : ''}
         </div>` : ''}
+        ${tieLossBlock}
         <div class="my-bid-actions">
           ${actionBtns}
           <button class="btn btn-ghost btn-sm btn-view-auction" data-id="${key}"><i class="bi bi-eye"></i> View</button>
@@ -6171,11 +6248,11 @@ async function boot(): Promise<void> {
     clearBorder();
     const endMs  = startMs + (bidHrsV > 0 ? bidHrsV * 3600_000 : 0);
     const endStr = bidHrsV > 0
-      ? new Date(endMs).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+      ? new Date(endMs).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
       : '—';
     hint.style.color = 'var(--text3)';
     hint.textContent = bidHrsV > 0
-      ? `Bidding: ${new Date(startMs).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })} → ${endStr}`
+      ? `Bidding: ${new Date(startMs).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })} → ${endStr}`
       : 'Enter Bidding Hours to see end time.';
   }
   document.getElementById('cf-start-date')?.addEventListener('change', updateStartDateHint);
