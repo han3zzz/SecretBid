@@ -1,3 +1,17 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║  SecretBid — app.ts                                              ║
+ * ║  Full logic: Wallet auth · Firebase · Sepolia contract           ║
+ * ║  + BidWar Scanner · Nonce Vault · Win-Probability Oracle         ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ *
+ *  Build:  tsc app.ts --target ES2020 --module ES2020 --outFile app.js
+ *  Or Vite: rename to app.ts, import in main.ts
+ */
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ETHERS v6 — imported directly (do NOT use window.ethers — breaks with Vite)
+// ─────────────────────────────────────────────────────────────────────────────
 import {
   BrowserProvider,
   Contract,
@@ -1365,8 +1379,13 @@ async function openDetail(id: number | string): Promise<void> {
   const bidEndEl   = document.getElementById('md-bidend');
   const bidStartEl = document.getElementById('md-bidstart');
   if (bidEndEl) {
-    bidEndEl.textContent = phase === 0 ? formatCountdown(a.biddingEnd) : (phase === 1 ? 'Ended' : '—');
-    bidEndEl.dataset.ts  = String(a.biddingEnd);
+    if (phase === 0) {
+      bidEndEl.textContent = formatCountdown(a.biddingEnd);
+      (bidEndEl as HTMLElement).dataset.ts = String(a.biddingEnd);
+    } else {
+      bidEndEl.textContent = phase === 1 ? 'Ended' : '—';
+      (bidEndEl as HTMLElement).dataset.ts = ''; // clear so global timer doesn't override
+    }
   }
   if (bidStartEl) {
     if (a.biddingStart && a.biddingStart > Math.floor(Date.now() / 1000)) {
