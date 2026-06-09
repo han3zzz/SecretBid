@@ -922,6 +922,7 @@ function navigate(page: string): void {
   if (page === 'scanner')     startScanner();
   if (page === 'vault')       renderRecentActivityPage();
   if (page === 'create' && S.wallet) void initNftCombobox();
+  if (page === 'disputes')    void loadDisputesList();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1595,7 +1596,15 @@ function renderDetailActions(a: Auction, phase: 0|1|2): void {
         </button>
       </div>`;
 
-    document.getElementById('btn-commit-bid')?.addEventListener('click', () => handleBid(id!));
+    document.getElementById('btn-commit-bid')?.addEventListener('click', () => {
+      const amtVal = parseFloat((document.getElementById('bid-amt') as HTMLInputElement)?.value || '0');
+      const minBid = parseFloat(a.startPrice || '0');
+      if (!amtVal || isNaN(amtVal) || amtVal < minBid) {
+        toast('Invalid Bid', `Minimum bid is ${a.startPrice} ETH`, 'err');
+        return;
+      }
+      showBidConfirmModal(id!, amtVal, a, () => handleBid(id!));
+    });
 
   // ── PHASE 1: ENDED — auto-finalizing in background ──────────────────────────
   } else if (phase === 1) {
@@ -4110,6 +4119,27 @@ function renderMyBids(): void {
 
     const usdVal = S.ethPrice ? `≈ $${(parseFloat(amount||'0') * S.ethPrice).toFixed(2)}` : '';
 
+    // ── Claim deadline banner (only for winner, not yet claimed) ──
+    const claimDeadSec = claimDl > 0 ? Math.floor(claimDl / 1000) : 0;
+    const claimHoursLeft = claimDl > 0 ? Math.max(0, (claimDl - Date.now()) / 3600_000) : 0;
+    const claimBanner = isMyWin && !a?.itemClaimed
+      ? claimExp
+        ? `<div style="margin-bottom:10px;padding:9px 12px;background:rgba(220,38,38,0.09);border:1.5px solid rgba(220,38,38,0.4);border-radius:var(--r2);font-size:12px;color:var(--red);font-weight:600">
+             ⛔ Claim period expired — NFT returned to seller
+           </div>`
+        : `<div style="margin-bottom:10px;padding:9px 12px;background:${claimHoursLeft < 24 ? 'rgba(220,38,38,0.09)' : 'rgba(200,150,10,0.08)'};border:1.5px solid ${claimHoursLeft < 24 ? 'rgba(220,38,38,0.45)' : 'rgba(200,150,10,0.35)'};border-radius:var(--r2);display:flex;align-items:center;gap:8px">
+             <span style="font-size:16px">${claimHoursLeft < 24 ? '🚨' : '⏰'}</span>
+             <div style="flex:1">
+               <div style="font-size:11.5px;font-weight:700;color:${claimHoursLeft < 24 ? 'var(--red)' : 'var(--gold)'}">
+                 ${claimHoursLeft < 24 ? 'Claim expires soon!' : 'Claim your NFT'}
+               </div>
+               <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:2px">
+                 <span data-ts="${claimDeadSec}">${formatCountdown(claimDeadSec)}</span> remaining
+               </div>
+             </div>
+           </div>`
+      : '';
+
     return `<div class="my-bid-card" data-bid-id="${key}">
       ${imgSection}
       <div class="my-bid-content">
@@ -4151,6 +4181,7 @@ function renderMyBids(): void {
           <div class="s-line">NONCE: <span style="font-size:10px;word-break:break-all">${e.nonce}</span></div>
           ${e.commitment ? `<div class="s-line">COMMITMENT: <span style="font-size:10px">${e.commitment.slice(0,28)}…</span></div>` : ''}
         </div>` : ''}
+        ${claimBanner}
         ${tieLossBlock}
         <div class="my-bid-actions">
           ${actionBtns}
@@ -6111,6 +6142,193 @@ Reply concisely, factually, and helpfully. Use real data from the context above 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  BID CONFIRMATION MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function showBidConfirmModal(auctionId: number | string, amt: number, a: Auction, onConfirm: () => void): void {
+  const existing = document.getElementById('overlay-bid-confirm');
+  if (existing) existing.remove();
+
+  const usd = S.ethPrice ? ` ≈ $${(amt * S.ethPrice).toLocaleString('en', { maximumFractionDigits: 2 })}` : '';
+  const isUpdate = !!(S.localSecrets[a._fbKey ?? ''] || S.localSecrets[String(a.id)]);
+  const timeLeft = a.biddingEnd - Math.floor(Date.now() / 1000);
+  const urgencyNote = timeLeft < 3600
+    ? `<div style="padding:8px 11px;background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.25);border-radius:var(--r2);font-size:11.5px;color:var(--red);font-weight:600">⚡ Closing in ${formatCountdown(a.biddingEnd)} — act fast!</div>`
+    : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.id = 'overlay-bid-confirm';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title">Confirm ${isUpdate ? 'Bid Update' : 'Bid'}</div>
+        <button class="modal-close" id="bid-confirm-close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align:center;padding:1rem 0 1.2rem">
+          <div style="font-size:2.8rem;font-family:var(--font-mono);font-weight:800;color:var(--glow);line-height:1">${amt.toFixed(4)}</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:4px">ETH${usd}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:9px 11px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Item</div>
+            <div style="font-size:12px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.itemName)}</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:9px 11px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Auction</div>
+            <div style="font-size:12px;color:var(--text);font-weight:600">#${a.id || a._fbKey}</div>
+          </div>
+        </div>
+        ${urgencyNote}
+        <div style="margin:12px 0;padding:10px 12px;background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.2);border-radius:var(--r2);font-size:11.5px;color:var(--text2);line-height:1.7">
+          ⚠️ <strong style="color:var(--text)">Sealed bids cannot be withdrawn.</strong> Once placed, your ETH is locked until the auction is finalized and you either win or get refunded.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+          <button class="btn btn-ghost" id="bid-confirm-cancel">Cancel</button>
+          <button class="btn btn-primary" id="bid-confirm-ok" style="background:linear-gradient(135deg,var(--glow),#00b8a0)">
+            <i class="bi bi-lightning-fill"></i> ${isUpdate ? 'Raise Bid' : 'Place Bid'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => { overlay.classList.remove('open'); setTimeout(() => overlay.remove(), 220); };
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.getElementById('bid-confirm-close')?.addEventListener('click', close);
+  document.getElementById('bid-confirm-cancel')?.addEventListener('click', close);
+  document.getElementById('bid-confirm-ok')?.addEventListener('click', () => {
+    close();
+    onConfirm();
+  });
+
+  requestAnimationFrame(() => overlay.classList.add('open'));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DISPUTES
+// ─────────────────────────────────────────────────────────────────────────────
+function openDisputeModal(): void {
+  if (!S.wallet) { toast('Connect Wallet', 'Please connect your wallet to open a dispute.', 'err'); return; }
+
+  // Populate auction dropdown with user's auctions/bids
+  const myKeys = Object.keys(S.localSecrets);
+  const myAuctions = S.auctions.filter(a =>
+    myKeys.includes(a._fbKey ?? '') || myKeys.includes(String(a.id)) ||
+    a.owner?.toLowerCase() === S.wallet!.address.toLowerCase()
+  );
+
+  const opts = myAuctions.length
+    ? myAuctions.map(a => `<option value="${esc(a._fbKey || String(a.id))}">#${a.id || a._fbKey} — ${esc(a.itemName)}</option>`).join('')
+    : `<option value="">No related auctions found</option>`;
+
+  const sel = document.getElementById('dispute-auction-sel');
+  if (sel) sel.innerHTML = `<option value="">Select auction…</option>` + opts;
+
+  openOverlay('overlay-dispute');
+}
+
+async function handleDisputeSubmit(): Promise<void> {
+  const auctionVal  = (document.getElementById('dispute-auction-sel') as HTMLSelectElement)?.value?.trim();
+  const typeVal     = (document.getElementById('dispute-type-sel') as HTMLSelectElement)?.value?.trim();
+  const descVal     = (document.getElementById('dispute-desc-inp') as HTMLTextAreaElement)?.value?.trim();
+  const evidenceVal = (document.getElementById('dispute-evidence-inp') as HTMLInputElement)?.value?.trim();
+
+  if (!auctionVal) { toast('Required', 'Please select an auction.', 'err'); return; }
+  if (!typeVal)    { toast('Required', 'Please select a dispute type.', 'err'); return; }
+  if (!descVal || descVal.length < 20) { toast('Too short', 'Please describe the issue in at least 20 characters.', 'err'); return; }
+  if (!S.wallet)   { toast('Not connected', '', 'err'); return; }
+
+  const btn = document.getElementById('dispute-submit-btn') as HTMLButtonElement | null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
+  try {
+    const auction = S.auctions.find(a => (a._fbKey || String(a.id)) === auctionVal);
+    const disputeData = {
+      auctionId:     auctionVal,
+      auctionName:   auction?.itemName || auctionVal,
+      type:          typeVal,
+      description:   descVal,
+      evidence:      evidenceVal || '',
+      walletAddr:    S.wallet.address.toLowerCase(),
+      status:        'open',
+      ts:            Date.now(),
+    };
+    await fbPush('disputes', disputeData);
+    await fbPush('activity', {
+      type: 'system', text: 'Dispute Filed', color: 'red', icon: '🚩',
+      detail: `${S.wallet.address.slice(0,6)}…${S.wallet.address.slice(-4)} filed a dispute on ${auction?.itemName || auctionVal}`,
+      ts: Date.now(),
+      walletAddr: S.wallet.address.toLowerCase(),
+    });
+
+    closeOverlay('overlay-dispute');
+    toast('Dispute Filed ✅', 'Your dispute has been submitted and will be reviewed by the DAO.', 'ok');
+    loadDisputesList();
+
+    // Reset form
+    (document.getElementById('dispute-desc-inp') as HTMLTextAreaElement|null && (
+      (document.getElementById('dispute-desc-inp') as HTMLTextAreaElement).value = ''
+    ));
+    (document.getElementById('dispute-evidence-inp') as HTMLInputElement|null && (
+      (document.getElementById('dispute-evidence-inp') as HTMLInputElement).value = ''
+    ));
+  } catch (e: any) {
+    toast('Failed', e.message?.slice(0, 80) ?? 'Unknown error', 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit Dispute'; }
+  }
+}
+
+async function loadDisputesList(): Promise<void> {
+  const container = document.getElementById('disputes-list-wrap');
+  if (!container) return;
+  if (!FB_CONFIGURED) {
+    // Keep the static demo cards that are already in HTML
+    return;
+  }
+  container.innerHTML = `<div style="padding:1.5rem;text-align:center"><div class="spin-icon" style="margin:0 auto"></div></div>`;
+  try {
+    const walletFilter = S.wallet?.address?.toLowerCase();
+    const colRef = collection(db, 'disputes');
+    const snap = walletFilter
+      ? await getDocs(query(colRef, where('walletAddr', '==', walletFilter), orderBy('ts', 'desc'), limit(20)))
+      : await getDocs(query(colRef, orderBy('ts', 'desc'), limit(20)));
+
+    if (snap.empty) {
+      container.innerHTML = `<div class="empty" style="padding:2rem 0"><div class="empty-ico">🏳️</div><div class="empty-title">No disputes yet</div><p style="font-size:13px;color:var(--text3);margin-top:4px">Click "Open Dispute" if you have an issue with an auction.</p></div>`;
+      return;
+    }
+
+    const cards = snap.docs.map(d => {
+      const it = d.data();
+      const ago = (() => {
+        const diff = Math.floor((Date.now() - (it.ts || 0)) / 1000);
+        if (diff < 60)   return 'just now';
+        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+        return Math.floor(diff/86400) + 'd ago';
+      })();
+      const statusClass = it.status === 'resolved' ? 'resolved' : it.status === 'rejected' ? 'open' : 'open';
+      const statusLabel = (it.status || 'open').toUpperCase();
+      return `<div class="dispute-card">
+        <div class="dispute-badge ${statusClass}">${statusLabel}</div>
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:4px;font-size:0.9rem;letter-spacing:0.04em;margin-top:8px">${esc(it.auctionName || it.auctionId)} — ${esc(it.type || 'General')}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">${esc(it.description?.slice(0,120) || '')}${it.description?.length > 120 ? '…' : ''}</div>
+        ${it.evidence ? `<div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-family:var(--font-mono)">Evidence: ${esc(it.evidence.slice(0,60))}</div>` : ''}
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+          <i class="bi bi-clock" style="margin-right:4px"></i>Opened ${ago} · ${esc(it.walletAddr?.slice(0,6) ?? '')}…${esc(it.walletAddr?.slice(-4) ?? '')}
+        </div>
+      </div>`;
+    }).join('');
+    container.innerHTML = cards || `<div class="empty"><div class="empty-title">No disputes found</div></div>`;
+  } catch (e: any) {
+    console.warn('[Disputes] load error:', e.message);
+    container.innerHTML = `<div class="empty"><div class="empty-title">Could not load disputes</div></div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  BOOT
 // ─────────────────────────────────────────────────────────────────────────────
 async function boot(): Promise<void> {
@@ -6313,8 +6531,13 @@ async function boot(): Promise<void> {
   });
 
   // ── Disputes page ────────────────────────────────────────────────────────
-  document.getElementById('btn-open-dispute')?.addEventListener('click', () =>
-    toast('Disputes', 'Coming soon.', 'info'));
+  document.getElementById('btn-open-dispute')?.addEventListener('click', openDisputeModal);
+  document.getElementById('dispute-modal-close')?.addEventListener('click', () => closeOverlay('overlay-dispute'));
+  document.getElementById('dispute-cancel-btn')?.addEventListener('click', () => closeOverlay('overlay-dispute'));
+  document.getElementById('dispute-submit-btn')?.addEventListener('click', handleDisputeSubmit);
+  // Populate auction selector when modal opens
+  // Disputes list load
+  loadDisputesList();
 
   // ── Quick actions sidebar ────────────────────────────────────────────────
   document.querySelectorAll<HTMLElement>('.qa-item[data-page]').forEach(item =>
