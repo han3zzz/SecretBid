@@ -762,7 +762,7 @@
       </button>
     </div>
     <div class="main-grid">
-      <div>
+      <div id="disputes-list-wrap">
         <div class="dispute-card">
           <div class="dispute-badge open">OPEN</div>
           <div style="font-family:var(--font-head);font-weight:700;margin-bottom:4px;font-size:0.9rem;letter-spacing:0.04em;margin-top:8px">CryptoPunk #3886 — Reveal Discrepancy</div>
@@ -789,7 +789,7 @@
             <div class="how-inline-grid" style="grid-template-columns:1fr">
               <div class="how-inline-item">
                 <div class="how-inline-icon" style="background:rgba(217,53,96,0.07);border-color:rgba(217,53,96,0.18)"><i class="bi bi-flag-fill" style="color:var(--red)"></i></div>
-                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Open Dispute</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">File a dispute if reveal failed due to network issues or contract bug. Include tx hash evidence.</div></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Open Dispute</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">File a dispute if you have an issue with an auction you participated in. Include tx hash evidence.</div></div>
               </div>
               <div class="how-inline-item">
                 <div class="how-inline-icon" style="background:rgba(200,150,10,0.07);border-color:rgba(200,150,10,0.18)"><i class="bi bi-people-fill" style="color:var(--gold)"></i></div>
@@ -797,11 +797,11 @@
               </div>
               <div class="how-inline-item">
                 <div class="how-inline-icon" style="background:rgba(0,158,140,0.07);border-color:rgba(0,158,140,0.18)"><i class="bi bi-check-circle-fill" style="color:var(--glow)"></i></div>
-                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Resolution</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Resolved disputes may result in deposit release or extend reveal window. Status shown here.</div></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Resolution</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Resolved disputes may result in deposit release or refund. Status shown here in real time.</div></div>
               </div>
               <div class="how-inline-item">
                 <div class="how-inline-icon" style="background:rgba(26,127,193,0.07);border-color:rgba(26,127,193,0.18)"><i class="bi bi-clock-fill" style="color:var(--blue)"></i></div>
-                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Timeframe</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Disputes must be filed within 48h of reveal phase ending. Late submissions rejected.</div></div>
+                <div><strong style="font-family:var(--font-head);font-size:0.8rem;letter-spacing:0.05em">Timeframe</strong><div style="font-size:12px;color:var(--text2);margin-top:3px">Disputes must be filed within 48h of auction ending. Late submissions rejected.</div></div>
               </div>
             </div>
           </div>
@@ -1093,6 +1093,53 @@
         <div class="oracle-body" id="modal-oracle-body"></div>
       </div>
       <div id="md-actions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Open Dispute Modal -->
+<div class="overlay" id="overlay-dispute">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title"><i class="bi bi-flag" style="color:var(--red);margin-right:8px"></i>Open Dispute</div>
+      <button class="modal-close" id="dispute-modal-close"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="inp-row">
+        <label class="inp-lbl"><i class="bi bi-hammer" style="margin-right:4px"></i> RELATED AUCTION *</label>
+        <select class="inp" id="dispute-auction-sel" style="background:var(--bg2);color:var(--text)">
+          <option value="">Select auction…</option>
+        </select>
+      </div>
+      <div class="inp-row">
+        <label class="inp-lbl"><i class="bi bi-tag" style="margin-right:4px"></i> DISPUTE TYPE *</label>
+        <select class="inp" id="dispute-type-sel" style="background:var(--bg2);color:var(--text)">
+          <option value="">Select type…</option>
+          <option value="NFT Not Received">NFT Not Received</option>
+          <option value="Wrong NFT Sent">Wrong NFT Sent</option>
+          <option value="Refund Not Received">Refund Not Received</option>
+          <option value="Finalization Issue">Finalization Issue</option>
+          <option value="Suspicious Activity">Suspicious Activity</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="inp-row">
+        <label class="inp-lbl"><i class="bi bi-chat-text" style="margin-right:4px"></i> DESCRIPTION * <span style="font-size:10px;color:var(--text3)">(min 20 chars)</span></label>
+        <textarea class="inp" id="dispute-desc-inp" rows="4" placeholder="Describe the issue in detail — what happened, when, and what outcome you expect…" style="resize:vertical;line-height:1.6"></textarea>
+      </div>
+      <div class="inp-row">
+        <label class="inp-lbl"><i class="bi bi-link-45deg" style="margin-right:4px"></i> TX HASH / EVIDENCE <span style="font-size:10px;color:var(--text3)">(optional but recommended)</span></label>
+        <input class="inp" id="dispute-evidence-inp" type="text" placeholder="0x… or link to on-chain evidence"/>
+      </div>
+      <div style="padding:9px 12px;background:rgba(200,150,10,0.06);border:1px solid rgba(200,150,10,0.2);border-radius:var(--r2);font-size:11.5px;color:var(--text3);line-height:1.7;margin-bottom:14px">
+        &#x2696;&#xFE0F; Disputes are reviewed by Rialo DAO within 72h. Providing a tx hash significantly speeds up review. False disputes may result in wallet restriction.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="btn btn-ghost" id="dispute-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="dispute-submit-btn" style="background:linear-gradient(135deg,var(--red),#b91c1c)">
+          <i class="bi bi-flag-fill"></i> Submit Dispute
+        </button>
+      </div>
     </div>
   </div>
 </div>
