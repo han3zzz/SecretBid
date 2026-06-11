@@ -1,4 +1,17 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║  SecretBid — app.ts                                              ║
+ * ║  Full logic: Wallet auth · Firebase · Sepolia contract           ║
+ * ║  + BidWar Scanner · Nonce Vault · Win-Probability Oracle         ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ *
+ *  Build:  tsc app.ts --target ES2020 --module ES2020 --outFile app.js
+ *  Or Vite: rename to app.ts, import in main.ts
+ */
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  ETHERS v6 — imported directly (do NOT use window.ethers — breaks with Vite)
+// ─────────────────────────────────────────────────────────────────────────────
 import {
   BrowserProvider,
   Contract,
@@ -2185,10 +2198,10 @@ async function handleFinalize(auctionId: number | string): Promise<void> {
     if (winnerAddr && winnerAddr !== (S.wallet?.address?.toLowerCase() || '')) {
       await fbPush('activity', {
         type: 'finalized',
-        text: 'You Won an Auction!',
+        text: 'Auction Won',
         color: 'gold',
         icon: '🏆',
-        detail: `You won "${a?.itemName}" · Winning bid: ${parseFloat(realWinningBid).toFixed(4)} ETH · Claim your NFT within 3 days`,
+        detail: `${shortAddr(winnerAddr)} won "${a?.itemName}" · Winning bid: ${parseFloat(realWinningBid).toFixed(4)} ETH · Claim your NFT within 3 days`,
         ts: nowTs,
         walletAddr: winnerAddr,
         auctionId: String(auctionId),
@@ -2199,39 +2212,8 @@ async function handleFinalize(auctionId: number | string): Promise<void> {
       });
     }
 
-    // Activity ETH received cho seller
-    if (sellerAddr && realWinner && sellerAddr !== (S.wallet?.address?.toLowerCase() || '')) {
-      await fbPush('activity', {
-        type: 'eth_received',
-        text: 'ETH Received from Auction',
-        color: 'green',
-        icon: '💰',
-        detail: `"${a?.itemName}" settled · You received ${sellerReceived} ETH (after 2.5% platform fee)`,
-        ts: nowTs,
-        walletAddr: sellerAddr,
-        auctionId: String(auctionId),
-        auctionName: a?.itemName || '',
-        winner: realWinner,
-        winningBid: realWinningBid,
-        amount: sellerReceived,
-      });
-    } else if (sellerAddr && realWinner && sellerAddr === (S.wallet?.address?.toLowerCase() || '')) {
-      // Seller finalizing their own auction
-      await fbPush('activity', {
-        type: 'eth_received',
-        text: 'ETH Received — Your Auction Settled',
-        color: 'green',
-        icon: '💰',
-        detail: `"${a?.itemName}" settled · You received ${sellerReceived} ETH (after 2.5% platform fee) · Winner: ${shortAddr(realWinner)}`,
-        ts: nowTs,
-        walletAddr: sellerAddr,
-        auctionId: String(auctionId),
-        auctionName: a?.itemName || '',
-        winner: realWinner,
-        winningBid: realWinningBid,
-        amount: sellerReceived,
-      });
-    }
+    // NOTE: eth_received activity cho seller KHÔNG ghi ở đây.
+    // ETH chỉ được ghi nhận khi winner đã claimNFT (xem handleClaim).
 
     hideTxOverlay();
     toast('Finalized ✅', realWinner ? `Winner: ${shortAddr(realWinner)}` : 'No bids — auction settled.', 'ok');
@@ -2276,7 +2258,7 @@ async function handleClaim(auctionId: number | string): Promise<void> {
       text: 'NFT Claimed',
       color: 'blue',
       icon: '🖼️',
-      detail: `You received the NFT "${a?.itemName || ''}"${a?.tokenId ? ' · Token #' + a.tokenId : ''}${a?.nftContract ? ' · Contract: ' + a.nftContract.slice(0,10) + '…' : ''}`,
+      detail: `${shortAddr(winnerAddr)} received the NFT "${a?.itemName || ''}"${a?.tokenId ? ' · Token #' + a.tokenId : ''}${a?.nftContract ? ' · Contract: ' + a.nftContract.slice(0,10) + '…' : ''}`,
       ts: claimedAt,
       walletAddr: winnerAddr,
       auctionId: String(auctionId),
@@ -2287,20 +2269,23 @@ async function handleClaim(auctionId: number | string): Promise<void> {
       tokenId: a?.tokenId || '',
     });
 
-    // Log eth_received activity for seller (if seller is not the winner)
+    // Log eth_received activity for seller — triggered when NFT is claimed (not at finalize)
     const sellerAddr = a?.owner?.toLowerCase() || '';
-    if (sellerAddr && sellerAddr !== winnerAddr) {
+    if (sellerAddr) {
       const winningBid = a?.winningBid || '0';
       // Prefer sellerReceived saved from contract event (most accurate)
       const sellerReceived = (a as any)?.sellerReceived
         ? parseFloat((a as any).sellerReceived).toFixed(6)
         : (parseFloat(winningBid) * 0.975).toFixed(6);
+      const isSellerWinner = sellerAddr === winnerAddr;
       await fbPush('activity', {
         type: 'eth_received',
-        text: 'ETH Received — NFT Delivered',
+        text: isSellerWinner ? 'ETH Received — Auction Settled' : 'ETH Received — NFT Delivered',
         color: 'green',
         icon: '💰',
-        detail: `"${a?.itemName || ''}" NFT was claimed by winner · You received ${sellerReceived} ETH`,
+        detail: isSellerWinner
+          ? `"${a?.itemName || ''}" settled · ${shortAddr(sellerAddr)} received ${sellerReceived} ETH (after 2.5% platform fee)`
+          : `"${a?.itemName || ''}" NFT claimed by ${shortAddr(winnerAddr)} · ${shortAddr(sellerAddr)} received ${sellerReceived} ETH`,
         ts: claimedAt,
         walletAddr: sellerAddr,
         auctionId: String(auctionId),
@@ -5081,17 +5066,17 @@ function _raBuildFromLocal(addr: string): void {
     if (a.itemClaimed && isWinner) {
       const ts = (a as any).claimedAt || (a.finalizedAt || a.createdAt || 0) + 10;
       items.push({ type: 'nft_claim', auctionName: a.itemName, ts, walletAddr: addr,
-        detail: `You received the NFT "${a.itemName}"${a.tokenId ? ' · Token #' + a.tokenId : ''}`,
+        detail: `${shortAddr(addr)} received the NFT "${a.itemName}"${a.tokenId ? ' · Token #' + a.tokenId : ''}`,
         nftContract: a.nftContract || '', tokenId: a.tokenId || '' });
     }
     // ETH received — seller when auction is finalized with a winner AND NFT has been claimed
-    if (a.finalized && isOwner && a.winner && a.winner !== '0x0000000000000000000000000000000000000000' && parseFloat(a.winningBid || '0') > 0) {
+    if (a.finalized && a.itemClaimed && isOwner && a.winner && a.winner !== '0x0000000000000000000000000000000000000000' && parseFloat(a.winningBid || '0') > 0) {
       const sellerReceived = (a as any).sellerReceived
         ? parseFloat((a as any).sellerReceived).toFixed(6)
         : (parseFloat(a.winningBid) * 0.975).toFixed(6);
       const ts = a.itemClaimed ? ((a as any).claimedAt || (a.finalizedAt || a.createdAt || 0) + 20) : (a.finalizedAt || a.createdAt || 0);
       items.push({ type: 'eth_received', auctionName: a.itemName, amount: sellerReceived, ts, walletAddr: addr,
-        detail: `"${a.itemName}" settled · You received ${sellerReceived} ETH (after 2.5% platform fee)`,
+        detail: `"${a.itemName}" settled · ${shortAddr(addr)} received ${sellerReceived} ETH (after 2.5% platform fee)`,
         winner: a.winner, winningBid: a.winningBid });
     }
     if (mySecret) {
@@ -6289,7 +6274,7 @@ async function handleDisputeSubmit(): Promise<void> {
     await fbPush('disputes', disputeData);
     await fbPush('activity', {
       type: 'system', text: 'Dispute Filed', color: 'red', icon: '🚩',
-      detail: `${S.wallet.address.slice(0,6)}…${S.wallet.address.slice(-4)} filed a dispute on ${auction?.itemName || auctionVal}`,
+      detail: `${shortAddr(S.wallet.address)} filed a dispute on ${auction?.itemName || auctionVal}`,
       ts: Date.now(),
       walletAddr: S.wallet.address.toLowerCase(),
     });
