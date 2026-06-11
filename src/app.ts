@@ -1061,7 +1061,11 @@ function renderAuctions(): void {
   const now2   = Math.floor(Date.now() / 1000);
   const active    = S.auctions.filter(a => !a.finalized && calcPhase(a) === 0 && !isUpcoming(a));
   const upcoming  = S.auctions.filter(a => !a.finalized && isUpcoming(a));
-  const completed = S.auctions.filter(a => a.finalized && a.winner && a.winner !== '0x0000000000000000000000000000000000000000');
+  // completed = đã finalize có winner, HOẶC đã kết thúc (phase=1) chưa finalize nhưng có bidder
+  const completed = S.auctions.filter(a =>
+    (a.finalized && a.winner && a.winner !== '0x0000000000000000000000000000000000000000') ||
+    (!a.finalized && calcPhase(a) === 1 && (a.totalBidders || 0) > 0)
+  );
   const cancelled = S.auctions.filter(a =>
     (a.finalized && (!a.winner || a.winner === '0x0000000000000000000000000000000000000000')) ||
     (!a.finalized && calcPhase(a) === 1 && (a.totalBidders || 0) === 0)
@@ -5796,11 +5800,29 @@ function toast(title: string, msg: string, type: 'ok'|'err'|'info'): void {
 //  Seller clicks → MetaMask prompts exactly once when needed.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Track auction IDs that have already been detected as ended so we don't re-render repeatedly
+const _detectedEndedIds = new Set<string>();
+
 async function autoFinalizeEndedAuctions(): Promise<void> {
-  // Re-render only to update display state — do not send tx
+  // Re-render only when a NEW auction transitions to ended for the first time
   const now = Math.floor(Date.now() / 1000);
-  const hasEnded = S.auctions.some(a => !a.finalized && a.phase !== 2 && a.biddingEnd && now >= a.biddingEnd);
-  if (hasEnded) renderAuctions();
+  let hasNew = false;
+  for (const a of S.auctions) {
+    if (!a.finalized && a.phase !== 2 && a.biddingEnd && now >= a.biddingEnd) {
+      const key = String(a.id || a._fbKey);
+      if (!_detectedEndedIds.has(key)) {
+        _detectedEndedIds.add(key);
+        hasNew = true;
+      }
+    }
+  }
+  // Clear stale keys for auctions that no longer exist
+  for (const key of _detectedEndedIds) {
+    if (!S.auctions.some(a => String(a.id || a._fbKey) === key)) {
+      _detectedEndedIds.delete(key);
+    }
+  }
+  if (hasNew) renderAuctions();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -5823,9 +5845,10 @@ function startGlobalTimers(): void {
 
     // Refresh auction cards that just ended bidding (phase 0→1 transition)
     // or claim deadline expired — re-render grid automatically
+    // Only trigger for auctions CURRENTLY in phase 0 (active) that are about to end
     const now = Math.floor(Date.now() / 1000);
     const needsRefresh = S.auctions.some(a => {
-      if (calcPhase(a) === 0 && a.biddingEnd && Math.abs(a.biddingEnd - now) < 2) return true;
+      if (calcPhase(a) === 0 && a.biddingEnd && a.biddingEnd - now >= 0 && a.biddingEnd - now < 2) return true;
       const claimDl = (a as any).claimDeadline;
       if (claimDl && Math.abs(Math.floor(claimDl/1000) - now) < 2) return true;
       return false;
