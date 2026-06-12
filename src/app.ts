@@ -888,11 +888,11 @@ async function updateWalletUI(): Promise<void> {
 async function renderSidebarStats(): Promise<void> {
   if (!S.wallet) return;
   try {
-    const user    = await fbRead(`users/${S.wallet.address.toLowerCase()}`);
-    const secrets = Object.keys(S.localSecrets).length;
-    const won     = user?.auctionsWon ?? 0;
-    const rate    = secrets > 0 ? Math.round((won / secrets) * 100) : 0;
-    document.getElementById('ms-bids')!.textContent      = String(secrets);
+    const user      = await fbRead(`users/${S.wallet.address.toLowerCase()}`);
+    const totalBids = user?.totalBids ?? 0;
+    const won       = user?.auctionsWon ?? 0;
+    const rate      = totalBids > 0 ? Math.round((won / totalBids) * 100) : 0;
+    document.getElementById('ms-bids')!.textContent      = String(totalBids);
     document.getElementById('ms-won')!.textContent       = String(won);
     document.getElementById('ms-spent')!.textContent     = (user?.totalSpent ?? '0') + ' ETH';
     document.getElementById('ms-total-won')!.textContent = (user?.totalWon ?? '0') + ' ETH';
