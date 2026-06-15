@@ -90,8 +90,90 @@ declare global {
   }
 }
 
-// Helper to safely access window.ethereum without TS errors
+// ─────────────────────────────────────────────────────────────────────────────
+//  MULTI-WALLET PROVIDER DETECTION
+//  Hỗ trợ: MetaMask, OKX Wallet, Rabby, Coinbase Wallet, Trust Wallet,
+//           Brave Wallet, và bất kỳ ví EIP-1193 nào khác.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface WalletProvider {
+  id:       string;
+  name:     string;
+  icon:     string;
+  provider: any;
+}
+
+/** Phát hiện tất cả các ví EIP-1193 đang cài đặt trong trình duyệt */
+function detectWallets(): WalletProvider[] {
+  const win = window as any;
+  const found: WalletProvider[] = [];
+  const seen = new Set<any>();
+
+  function add(id: string, name: string, icon: string, provider: any) {
+    if (!provider || seen.has(provider)) return;
+    seen.add(provider);
+    found.push({ id, name, icon, provider });
+  }
+
+  // ── SVG Icons (inline, 28×28) ──────────────────────────────────────────────
+  const ICON_METAMASK = `<svg width="28" height="28" viewBox="0 0 256 240" xmlns="http://www.w3.org/2000/svg"><polygon fill="#E2761B" stroke="#E2761B" stroke-linejoin="round" points="250.07,0.66 140.73,81.5 161.17,34.3"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="6.03,0.66 114.46,82.27 95.04,34.3"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="213.56,174.42 183.82,220.04 243.64,236.3 260.56,175.39"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="0.53,175.39 17.35,236.3 77.17,220.04 47.43,174.42"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="73.99,109.2 57.62,133.84 116.96,136.47 114.98,72.32"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="182.12,109.2 141.23,71.54 140.73,136.47 200.07,133.84"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="77.17,220.04 113.42,202.79 82.02,175.81"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="142.68,202.79 178.93,220.04 174.09,175.81"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="178.93,220.04 142.68,202.79 145.6,228.55 145.22,235.6"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="77.17,220.04 110.88,235.6 110.58,228.55 113.42,202.79"/><polygon fill="#C0AD9E" stroke="#C0AD9E" stroke-linejoin="round" points="111.35,162.85 81.24,154.17 102.2,144.62"/><polygon fill="#C0AD9E" stroke="#C0AD9E" stroke-linejoin="round" points="144.76,162.85 153.9,144.62 174.97,154.17"/><polygon fill="#161616" stroke="#161616" stroke-linejoin="round" points="77.17,220.04 82.21,174.42 47.43,175.39"/><polygon fill="#161616" stroke="#161616" stroke-linejoin="round" points="173.9,174.42 178.93,220.04 208.68,175.39"/><polygon fill="#763D16" stroke="#763D16" stroke-linejoin="round" points="200.07,133.84 140.73,136.47 144.76,162.85 153.9,144.62 174.97,154.17"/><polygon fill="#763D16" stroke="#763D16" stroke-linejoin="round" points="81.24,154.17 102.2,144.62 111.35,162.85 116.96,136.47 57.62,133.84"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="57.62,133.84 82.02,175.81 81.24,154.17"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="174.97,154.17 174.09,175.81 200.07,133.84"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="116.96,136.47 111.35,162.85 118.27,198.53 119.87,150.44"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="140.73,136.47 136.24,150.35 137.84,198.53 144.76,162.85"/><polygon fill="#FCD535" stroke="#FCD535" stroke-linejoin="round" points="144.76,162.85 137.84,198.53 142.68,202.79 174.09,175.81 174.97,154.17"/><polygon fill="#FCD535" stroke="#FCD535" stroke-linejoin="round" points="81.24,154.17 82.02,175.81 113.42,202.79 118.27,198.53 111.35,162.85"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="145.22,235.6 145.6,228.55 142.94,226.27 113.17,226.27 110.58,228.55 110.88,235.6 77.17,220.04 88.85,229.51 112.78,246.21 143.32,246.21 167.26,229.51 178.93,220.04"/><polygon fill="#CD6116" stroke="#CD6116" stroke-linejoin="round" points="142.68,202.79 137.84,198.53 118.27,198.53 113.42,202.79 110.58,228.55 113.17,226.27 142.94,226.27 145.6,228.55"/><polygon fill="#E4751F" stroke="#E4751F" stroke-linejoin="round" points="253.84,85.48 262.89,43.24 250.07,0.66 142.68,78.7 182.12,109.2 242.51,126.57 254.84,112.26 249.62,108.52 257.47,101.4 251.18,96.64 259.03,90.57"/><polygon fill="#E4751F" stroke="#E4751F" stroke-linejoin="round" points="-6.78,43.24 2.27,85.48 -4.02,90.57 3.83,96.64 -2.46,101.4 5.39,108.52 0.17,112.26 12.5,126.57 72.9,109.2 113.32,78.7 5.93,0.66"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="242.51,126.57 182.12,109.2 200.07,133.84 174.97,154.17 174.09,175.81 208.68,175.39 260.56,175.39 243.64,236.3 183.82,220.04 213.56,174.42"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="72.9,109.2 12.5,126.57 47.43,174.42 77.17,220.04 17.35,236.3 -3.57,175.39 47.43,175.39 82.02,175.81 81.24,154.17 57.62,133.84"/><polygon fill="#FCD535" stroke="#FCD535" stroke-linejoin="round" points="182.12,109.2 242.51,126.57 200.07,133.84"/><polygon fill="#FCD535" stroke="#FCD535" stroke-linejoin="round" points="57.62,133.84 72.9,109.2 12.5,126.57"/><polygon fill="#CD6116" stroke="#CD6116" stroke-linejoin="round" points="113.32,78.7 114.98,72.32 95.04,34.3 6.03,0.66 73.99,109.2 113.32,78.7"/><polygon fill="#CD6116" stroke="#CD6116" stroke-linejoin="round" points="182.79,78.7 182.12,109.2 222.12,0.66 161.17,34.3 141.23,71.54 141.45,78.7"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="113.32,78.7 141.45,78.7 140.73,136.47 116.96,136.47"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="182.12,109.2 200.07,133.84 140.73,136.47 141.45,78.7"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="73.99,109.2 113.32,78.7 116.96,136.47 57.62,133.84"/></svg>`;
+
+  const ICON_OKX = `<svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="16" fill="#000"/><rect x="10" y="10" width="34" height="34" rx="4" fill="#fff"/><rect x="56" y="10" width="34" height="34" rx="4" fill="#fff"/><rect x="10" y="56" width="34" height="34" rx="4" fill="#fff"/><rect x="56" y="56" width="34" height="34" rx="4" fill="#fff"/></svg>`;
+
+  const ICON_COINBASE = `<svg width="28" height="28" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><circle cx="512" cy="512" r="512" fill="#1652F0"/><path d="M516 692c-99.6 0-180.4-80.8-180.4-180.4S416.4 331.2 516 331.2c89.6 0 164.8 61.6 180 145.6h180.4C858.8 307.2 702.4 180 516 180 319.6 180 160 339.6 160 536s159.6 356 356 356c186 0 342.4-126.8 360.8-296.4H696.4C680.8 631.2 606 692 516 692z" fill="#fff"/></svg>`;
+
+  const ICON_TRUST = `<svg width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0094FF"/><stop offset="100%" style="stop-color:#0033CC"/></linearGradient></defs><rect width="512" height="512" rx="80" fill="url(#tg)"/><path d="M256 64l144 52v128c0 88-60 164-144 196C172 408 112 332 112 244V116z" fill="#fff" opacity="0.95"/><path d="M256 96l112 40v108c0 70-46 130-112 156C190 374 144 314 144 244V136z" fill="url(#tg)"/><path d="M220 240l28 28 64-64" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+
+  const ICON_BRAVE = `<svg width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="80" fill="#FF5500"/><path d="M388 140l-20 80 16 24-20 76-28-12-16 28h-128l-16-28-28 12-20-76 16-24-20-80 60-28 36 16h48l36-16z" fill="#fff"/><path d="M256 192l32 96h-64z" fill="#FF5500"/><circle cx="200" cy="220" r="16" fill="#FF5500"/><circle cx="312" cy="220" r="16" fill="#FF5500"/></svg>`;
+
+  const ICON_RABBY = `<svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="20" fill="#8B5CF6"/><ellipse cx="50" cy="58" rx="28" ry="22" fill="#fff"/><ellipse cx="32" cy="38" rx="10" ry="16" fill="#fff"/><ellipse cx="68" cy="38" rx="10" ry="16" fill="#fff"/><circle cx="42" cy="56" r="4" fill="#8B5CF6"/><circle cx="58" cy="56" r="4" fill="#8B5CF6"/><path d="M44 64 Q50 68 56 64" stroke="#8B5CF6" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+
+  const ICON_INJECTED = `<svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="20" fill="#6B7280"/><circle cx="50" cy="50" r="28" fill="none" stroke="#fff" stroke-width="5"/><line x1="22" y1="50" x2="78" y2="50" stroke="#fff" stroke-width="5"/><ellipse cx="50" cy="50" rx="14" ry="28" fill="none" stroke="#fff" stroke-width="5"/></svg>`;
+
+  // OKX Wallet — window.okxwallet (phải check trước ethereum vì OKX cũng inject ethereum)
+  if (win.okxwallet) add('okx', 'OKX Wallet', ICON_OKX, win.okxwallet);
+
+  // Coinbase Wallet — window.coinbaseWalletExtension
+  if (win.coinbaseWalletExtension) add('coinbase', 'Coinbase Wallet', ICON_COINBASE, win.coinbaseWalletExtension);
+
+  // Trust Wallet — window.trustwallet
+  if (win.trustwallet) add('trust', 'Trust Wallet', ICON_TRUST, win.trustwallet);
+
+  // Brave Wallet — window.ethereum.isBraveWallet
+  if (win.ethereum?.isBraveWallet) add('brave', 'Brave Wallet', ICON_BRAVE, win.ethereum);
+
+  // Rabby — window.ethereum.isRabby
+  if (win.ethereum?.isRabby) add('rabby', 'Rabby', ICON_RABBY, win.ethereum);
+
+  // MetaMask — window.ethereum.isMetaMask (và không phải các ví giả mạo flag này)
+  if (win.ethereum?.isMetaMask && !win.ethereum?.isRabby && !win.ethereum?.isBraveWallet) {
+    add('metamask', 'MetaMask', ICON_METAMASK, win.ethereum);
+  }
+
+  // EIP-6963: multiple injected providers (MetaMask Flask, các extension mới)
+  if (Array.isArray(win.ethereum?.providers)) {
+    for (const p of win.ethereum.providers) {
+      if (p?.isMetaMask && !p?.isRabby) add('metamask', 'MetaMask', ICON_METAMASK, p);
+      if (p?.isRabby)                   add('rabby',    'Rabby',    ICON_RABBY,    p);
+      if (p?.isCoinbaseWallet)          add('coinbase', 'Coinbase Wallet', ICON_COINBASE, p);
+    }
+  }
+
+  // Generic fallback — window.ethereum nếu chưa được thêm
+  if (win.ethereum && !seen.has(win.ethereum)) {
+    add('injected', 'Browser Wallet', ICON_INJECTED, win.ethereum);
+  }
+
+  return found;
+}
+
+/** Lấy provider đang active (dùng cho autoConnect và các call nội bộ) */
 function getEthereum(): any | undefined {
+  // Ưu tiên provider đã được user chọn trong session này
+  const chosen = (window as any)._chosenProvider;
+  if (chosen) return chosen;
+  // OKX không inject vào window.ethereum nên phải check riêng
+  if ((window as any).okxwallet) return (window as any).okxwallet;
   return (window as any).ethereum;
 }
 
@@ -398,8 +480,18 @@ function lsLoadWallet(): string | null {
   try { return JSON.parse(localStorage.getItem(LS_WALLET) || 'null'); } catch { return null; }
 }
 
-function lsSaveWallet(addr: string): void  { localStorage.setItem(LS_WALLET, JSON.stringify(addr)); }
-function lsClearWallet(): void             { localStorage.removeItem(LS_WALLET); }
+function lsSaveWallet(addr: string): void {
+  localStorage.setItem(LS_WALLET, JSON.stringify(addr));
+  // Lưu tên ví đã chọn để autoConnect restore đúng provider
+  const name = (window as any)._chosenWalletName;
+  if (name) localStorage.setItem('sb:wallet_provider', name);
+}
+function lsClearWallet(): void {
+  localStorage.removeItem(LS_WALLET);
+  localStorage.removeItem('sb:wallet_provider');
+  (window as any)._chosenProvider   = undefined;
+  (window as any)._chosenWalletName = undefined;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  WALLET
@@ -409,48 +501,77 @@ function lsClearWallet(): void             { localStorage.removeItem(LS_WALLET);
 // ─────────────────────────────────────────────────────────────────────────────
 // Original HTML of overlay-wallet modal-body — used to restore after closing wallet info
 const WALLET_MODAL_ORIGINAL_TITLE = 'Connect Wallet';
-const WALLET_MODAL_ORIGINAL_BODY  = `
-  <div style="text-align:center">
-    <div class="wc-logo">🔒</div>
-    <div style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:0.4rem">SecretBid</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:1.2rem">Confirm connection to this dApp</div>
-    <div class="wc-addr" id="wc-addr">—</div>
-    <ul class="wc-list">
-      <li><span class="wc-check">✓</span> View wallet balance and activity</li>
-      <li><span class="wc-check">✓</span> Request transaction signatures</li>
-      <li><span class="wc-check">✓</span> Address cached locally (never uploaded)</li>
-      <li><span class="wc-check" style="color:var(--red)">✗</span> Cannot move funds without approval</li>
-    </ul>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <button class="btn btn-ghost" id="btn-wallet-cancel">Cancel</button>
-      <button class="btn btn-primary" id="btn-wallet-confirm">Connect &amp; Sign In</button>
-    </div>
-  </div>`;
+
+/** Render danh sách ví detect được thành HTML buttons */
+function buildWalletPickerHTML(): string {
+  const wallets = detectWallets();
+  if (!wallets.length) {
+    return `
+      <div style="text-align:center;padding:1.5rem 0">
+        <div style="font-size:2.5rem;margin-bottom:0.8rem">😕</div>
+        <div style="font-weight:700;margin-bottom:0.5rem">No wallet detected</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:1.2rem">
+          Please install a Web3 wallet extension first.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a class="btn btn-ghost btn-sm" href="https://metamask.io" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 256 240" xmlns="http://www.w3.org/2000/svg"><polygon fill="#E2761B" stroke="#E2761B" stroke-linejoin="round" points="250.07,0.66 140.73,81.5 161.17,34.3"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="6.03,0.66 114.46,82.27 95.04,34.3"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="213.56,174.42 183.82,220.04 243.64,236.3 260.56,175.39"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="0.53,175.39 17.35,236.3 77.17,220.04 47.43,174.42"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="73.99,109.2 57.62,133.84 116.96,136.47 114.98,72.32"/><polygon fill="#D7C1B3" stroke="#D7C1B3" stroke-linejoin="round" points="182.12,109.2 141.23,71.54 140.73,136.47 200.07,133.84"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="77.17,220.04 113.42,202.79 82.02,175.81"/><polygon fill="#E4761B" stroke="#E4761B" stroke-linejoin="round" points="142.68,202.79 178.93,220.04 174.09,175.81"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="178.93,220.04 142.68,202.79 145.6,228.55 145.22,235.6"/><polygon fill="#F6851B" stroke="#F6851B" stroke-linejoin="round" points="77.17,220.04 110.88,235.6 110.58,228.55 113.42,202.79"/></svg> Install MetaMask</a>
+          <a class="btn btn-ghost btn-sm" href="https://www.okx.com/web3" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="16" fill="#000"/><rect x="10" y="10" width="34" height="34" rx="4" fill="#fff"/><rect x="56" y="10" width="34" height="34" rx="4" fill="#fff"/><rect x="10" y="56" width="34" height="34" rx="4" fill="#fff"/><rect x="56" y="56" width="34" height="34" rx="4" fill="#fff"/></svg> Install OKX Wallet</a>
+          <a class="btn btn-ghost btn-sm" href="https://rabby.io" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="20" fill="#8B5CF6"/><ellipse cx="50" cy="58" rx="28" ry="22" fill="#fff"/><ellipse cx="32" cy="38" rx="10" ry="16" fill="#fff"/><ellipse cx="68" cy="38" rx="10" ry="16" fill="#fff"/><circle cx="42" cy="56" r="4" fill="#8B5CF6"/><circle cx="58" cy="56" r="4" fill="#8B5CF6"/><path d="M44 64 Q50 68 56 64" stroke="#8B5CF6" stroke-width="2" fill="none" stroke-linecap="round"/></svg> Install Rabby</a>
+        </div>
+      </div>`;
+  }
+
+  const walletBtns = wallets.map(w => `
+    <button class="btn btn-ghost wallet-picker-btn" data-wallet-id="${w.id}"
+      style="display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;
+             font-size:14px;font-weight:600;justify-content:flex-start;
+             border:1px solid var(--border);border-radius:var(--r2);margin-bottom:8px">
+      <span style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:6px;overflow:hidden">${w.icon}</span>
+      <span>${w.name}</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)">detected</span>
+    </button>`).join('');
+
+  return `
+    <div>
+      <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);
+                  text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">
+        Choose your wallet
+      </div>
+      ${walletBtns}
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);
+                  font-size:11px;color:var(--text3);text-align:center">
+        🔒 Address cached locally · Never uploaded · No fund access without approval
+      </div>
+    </div>`;
+}
+
+const WALLET_MODAL_ORIGINAL_BODY = buildWalletPickerHTML();
 
 function restoreWalletModal(): void {
   const modalTitle = document.querySelector('#overlay-wallet .modal-title') as HTMLElement;
   const modalBody  = document.querySelector('#overlay-wallet .modal-body')  as HTMLElement;
   if (modalTitle) modalTitle.textContent = WALLET_MODAL_ORIGINAL_TITLE;
-  if (modalBody)  modalBody.innerHTML    = WALLET_MODAL_ORIGINAL_BODY;
-  // Re-attach static listeners — clone nodes to remove any previously bound duplicates
-  const cancelBtn = document.getElementById('btn-wallet-cancel');
-  if (cancelBtn) {
-    const fresh = cancelBtn.cloneNode(true) as HTMLElement;
-    cancelBtn.replaceWith(fresh);
-    fresh.addEventListener('click', () => {
-      (window as any)._pendingCreate = false;
-      closeOverlay('overlay-wallet');
-    });
+  // Rebuild picker mỗi lần restore — detect lại ví hiện tại
+  if (modalBody) {
+    modalBody.innerHTML = buildWalletPickerHTML();
+    attachWalletPickerListeners(modalBody);
   }
-  const confirmBtn = document.getElementById('btn-wallet-confirm');
-  if (confirmBtn) {
-    const fresh = confirmBtn.cloneNode(true) as HTMLElement;
-    confirmBtn.replaceWith(fresh);
-    fresh.addEventListener('click', () => {
-      if (!S.wallet) confirmWalletConnect();
-      else closeOverlay('overlay-wallet');
+}
+
+/** Gắn event listeners cho các nút wallet picker trong modal */
+function attachWalletPickerListeners(container: HTMLElement): void {
+  container.querySelectorAll<HTMLElement>('.wallet-picker-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const walletId = btn.dataset.walletId!;
+      const wallets  = detectWallets();
+      const chosen   = wallets.find(w => w.id === walletId);
+      if (!chosen) return;
+      // Lưu provider được chọn vào window để getEthereum() trả về đúng ví
+      (window as any)._chosenProvider = chosen.provider;
+      (window as any)._chosenWalletName = chosen.name;
+      await initiateWalletConnect(chosen.provider);
     });
-  }
+  });
 }
 
 async function showWalletInfoModal(): Promise<void> {
@@ -468,12 +589,14 @@ async function showWalletInfoModal(): Promise<void> {
     balUsd = '≈ $' + (eth * S.ethPrice).toLocaleString('en', { maximumFractionDigits: 2 });
   } catch {}
 
+  const walletName = (window as any)._chosenWalletName ?? localStorage.getItem('sb:wallet_provider') ?? 'Wallet';
   modalTitle.textContent = 'Wallet Connected';
 
   modalBody.innerHTML = `
     <div style="text-align:center;margin-bottom:1.2rem">
       <div class="wc-logo" style="background:linear-gradient(135deg,var(--glow2),var(--glow))">✅</div>
-      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:0.5rem">Connected to Sepolia Testnet</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:0.3rem">Connected via ${walletName}</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:0.5rem">Sepolia Testnet</div>
       <div class="wc-addr">${S.wallet.address}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:1.2rem">
@@ -521,28 +644,35 @@ async function handleWalletClick(): Promise<void> {
     showWalletInfoModal();
     return;
   }
-  const eth = getEthereum();
-  if (!eth) {
-    toast('No Wallet', 'Install MetaMask or Rabby.', 'err');
-    return;
+
+  // Hiển thị wallet picker modal — user chọn ví muốn kết nối
+  const modalTitle = document.querySelector('#overlay-wallet .modal-title') as HTMLElement;
+  const modalBody  = document.querySelector('#overlay-wallet .modal-body')  as HTMLElement;
+  if (modalTitle) modalTitle.textContent = 'Connect Wallet';
+  if (modalBody) {
+    modalBody.innerHTML = buildWalletPickerHTML();
+    attachWalletPickerListeners(modalBody);
   }
+  openOverlay('overlay-wallet');
+}
+
+/**
+ * Khởi động flow kết nối với provider được chọn.
+ * Được gọi sau khi user click vào 1 ví trong picker.
+ */
+async function initiateWalletConnect(provider: any): Promise<void> {
+  closeOverlay('overlay-wallet');
   try {
-    const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
+    const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' });
     if (!accounts.length) { toast('No Account', 'No accounts found.', 'err'); return; }
     window._pendingAddr = accounts[0];
-
-    // If create is pending — skip the confirmation modal and connect directly
     if ((window as any)._pendingCreate) {
       await confirmWalletConnect();
       return;
     }
-
-    // Normal case — open confirmation modal as usual
-    const wcAddr = document.getElementById('wc-addr');
-    if (wcAddr) wcAddr.textContent = accounts[0];
-    openOverlay('overlay-wallet');
+    await confirmWalletConnect();
   } catch (e: any) {
-    toast('Connection Failed', e.message, 'err');
+    toast('Connection Failed', e.message?.slice(0, 100) ?? 'Unknown error', 'err');
   }
 }
 
@@ -555,7 +685,7 @@ async function confirmWalletConnect(): Promise<void> {
   if (!addr) return;
 
   const eth = getEthereum();
-  if (!eth) { toast('No Wallet', 'Install MetaMask or Rabby.', 'err'); return; }
+  if (!eth) { toast('No Wallet', 'No wallet provider found. Please select a wallet.', 'err'); return; }
 
   try {
     showTxOverlay('Checking Network', 'Verifying Sepolia…');
@@ -581,7 +711,7 @@ async function confirmWalletConnect(): Promise<void> {
             }],
           });
         } else {
-          throw new Error('Please switch to the Sepolia network in MetaMask.');
+          throw new Error('Please switch to the Sepolia network in your wallet.');
         }
       }
       // Wait for MetaMask to finish switching
@@ -687,8 +817,21 @@ async function disconnectWallet(): Promise<void> {
 
 async function autoConnect(): Promise<void> {
   const saved = lsLoadWallet();
-  const eth   = getEthereum();
-  if (!saved || !eth) return;
+  if (!saved) return;
+
+  // Restore _chosenProvider từ tên ví đã lưu trong localStorage
+  if (!(window as any)._chosenProvider) {
+    const savedProviderName = localStorage.getItem('sb:wallet_provider') ?? '';
+    const wallets = detectWallets();
+    const match   = wallets.find(w => w.name === savedProviderName);
+    if (match) {
+      (window as any)._chosenProvider   = match.provider;
+      (window as any)._chosenWalletName = match.name;
+    }
+  }
+
+  const eth = (window as any)._chosenProvider ?? getEthereum();
+  if (!eth) return;
 
   // Validate saved address format before using
   if (!/^0x[0-9a-fA-F]{40}$/.test(saved)) {
