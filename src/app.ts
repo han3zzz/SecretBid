@@ -317,15 +317,19 @@ async function fbRead(path: string): Promise<any> {
   } catch (e: any) { console.warn('[FB] read error:', path, e.message); return null; }
 }
 
-/** Write (overwrite) a document */
+/** Write a document — merge:true để không overwrite fields không được truyền vào */
 async function fbWrite(path: string, data: any): Promise<void> {
   if (!FB_CONFIGURED) return;
   try {
     const slashIdx = path.indexOf('/');
     const col   = slashIdx >= 0 ? path.slice(0, slashIdx) : path;
     const docId = slashIdx >= 0 ? path.slice(slashIdx + 1).replace(/\//g, '_') : String(Date.now());
-    await setDoc(doc(db, col, docId), { ...data, updatedAt: serverTimestamp() }, { merge: false });
-  } catch (e: any) { console.warn('[FB] write error:', path, e.message); }
+    await setDoc(doc(db, col, docId), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  } catch (e: any) {
+    console.error('[FB] write error:', path, e.message, e.code ?? '');
+    // Re-throw để handleCreateAuction biết write thất bại
+    throw e;
+  }
 }
 
 /** Add a new document with auto-ID (equivalent to push) */
@@ -935,12 +939,23 @@ async function loadAuctions(): Promise<void> {
 
   // ── Auctions collection ──────────────────────────────────────────────────────
   fbListen('auctions', (data: any) => {
-    S.auctions = [];
     if (data) {
+      // Merge Firebase snapshot vào S.auctions thay vì reset hoàn toàn.
+      // Tránh xóa mất auction optimistic (đã push ở Fix 3) trong khi Firestore
+      // listener chưa kịp nhận doc mới từ fbWrite.
+      const fbAuctions: Auction[] = [];
       Object.entries(data).forEach(([key, val]: [string, any]) => {
-        S.auctions.push({ ...val, _fbKey: key });
+        fbAuctions.push({ ...val, _fbKey: key });
       });
+      // Giữ lại các auction optimistic chưa có trong Firebase snapshot
+      const optimistic = S.auctions.filter(a =>
+        !fbAuctions.some(fb => String(fb.id) === String(a.id) || fb._fbKey === a._fbKey)
+      );
+      S.auctions = [...fbAuctions, ...optimistic];
       S.auctions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } else {
+      // Firebase trả về null (collection rỗng) — chỉ clear nếu không có optimistic entries
+      if (S.auctions.length === 0) S.auctions = [];
     }
     renderAuctions(); updateStats();
     // Re-render My Bids if page is currently active (fixes race condition with Firebase load)
@@ -3149,7 +3164,7 @@ async function handleCreateAuction(): Promise<void> {
     if (sdHint) { sdHint.textContent = '⚠ Please enter both date and time (e.g. 25/06/2025 14:30).'; sdHint.style.color = 'var(--red)'; }
     return;
   }
-  let biddingStartTs: number | undefined;
+  let biddingStartTs: number = Math.floor(Date.now() / 1000); // default = now nếu user không chọn
   if (startDateVal) {
     const parsed = new Date(startDateVal).getTime();
     if (isNaN(parsed)) {
@@ -3359,17 +3374,40 @@ async function handleCreateAuction(): Promise<void> {
     showTxOverlay('Broadcasting…', `Tx: ${txHash.slice(0, 20)}… — NFT is being transferred to the contract...`);
     const receipt = await tx.wait();
 
-    // Parse auctionId from AuctionCreated event
+    // ── Fix 1: Parse AuctionCreated event — dùng topics+data để tránh lỗi parseLog ──
     const iface = new Interface(CONTRACT_ABI);
     let onChainId: number | null = null;
     for (const log of receipt.logs) {
       try {
-        const parsed = iface.parseLog(log);
+        const parsed = iface.parseLog({ topics: log.topics as string[], data: log.data });
         if (parsed?.name === 'AuctionCreated') {
           onChainId = Number(parsed.args.auctionId);
-          auctionId = onChainId; // use on-chain numeric ID as primary
+          auctionId = onChainId;
         }
       } catch {}
+    }
+    // Fallback: nếu parse log thất bại → query auctionCount() từ contract
+    if (onChainId === null) {
+      try {
+        onChainId = Number(await S.wallet.contract.auctionCount());
+        auctionId = onChainId;
+        console.warn('[createAuction] parseLog failed — fallback to auctionCount():', onChainId);
+      } catch (fallbackErr: any) {
+        console.error('[createAuction] auctionCount fallback also failed:', fallbackErr.message);
+      }
+    }
+
+    // ── Fix 2: Lấy biddingEnd thật từ contract thay vì tính tay ──────────────
+    // contract tính biddingEnd = block.timestamp + duration, khác với local clock
+    let onChainBiddingEnd: number = (biddingStartTs ?? now) + bidDurationSecs;
+    if (onChainId !== null) {
+      try {
+        const onChainInfo = await S.wallet.contract.getInfo(onChainId);
+        onChainBiddingEnd = Number(onChainInfo.biddingEnd);
+        console.info('[createAuction] biddingEnd from contract:', onChainBiddingEnd);
+      } catch (infoErr: any) {
+        console.warn('[createAuction] getInfo fallback — using local biddingEnd:', infoErr.message);
+      }
     }
 
     // Step 4: save data to Firebase
@@ -3377,12 +3415,11 @@ async function handleCreateAuction(): Promise<void> {
       id:              auctionId,
       itemName:        name,
       itemDescription: desc,
-      itemImageURI:    imgUrl,  // Firebase Storage URL — synced with on-chain
+      itemImageURI:    imgUrl,
       startPrice:      price.toString(),
       owner:           S.wallet.address,
-      biddingEnd:      (biddingStartTs ?? now) + bidDurationSecs,
-      biddingStart:    biddingStartTs,   // undefined = start immediately
-      // revealEnd removed
+      biddingEnd:      onChainBiddingEnd,   // Fix 2: dùng giá trị thật từ contract
+      biddingStart:    biddingStartTs,   // luôn có giá trị: user chọn hoặc = now
       totalBidders:    0,
       phase:           0,
       finalized:       false,
@@ -3439,7 +3476,6 @@ async function handleCreateAuction(): Promise<void> {
         lastActivity:    Date.now(),
       });
     } else {
-      // User does not exist yet — create new profile
       await fbWrite(`users/${addr}`, {
         address:         S.wallet.address,
         joinedAt:        Date.now(),
@@ -3452,6 +3488,23 @@ async function handleCreateAuction(): Promise<void> {
         lastActivity:    Date.now(),
       });
     }
+
+    // ── Fix 3: Push auction vào S.auctions ngay lập tức trước navigate ────────
+    // fbListen cần thời gian để nhận update từ Firestore — nếu navigate trước
+    // khi listener fire thì auction sẽ không hiện trên trang chủ.
+    const newAuctionEntry: Auction = {
+      ...auctionData,
+      _fbKey: String(auctionId),
+    };
+    // Tránh duplicate nếu fbListen đã kịp cập nhật
+    const alreadyExists = S.auctions.some(
+      a => String(a.id) === String(auctionId) || a._fbKey === String(auctionId)
+    );
+    if (!alreadyExists) {
+      S.auctions.unshift(newAuctionEntry);
+    }
+    renderAuctions();
+    updateStats();
 
     // Show oracle estimate and reset form
     showCreateOracle(name, price);
