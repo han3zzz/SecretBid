@@ -2429,7 +2429,7 @@ async function handleClaim(auctionId: number | string): Promise<void> {
         color: 'green',
         icon: '💰',
         detail: isSellerWinner
-          ? `"${a?.itemName || ''}" settled · ${shortAddr(sellerAddr)} received ${sellerReceived} ETH (after 2.5% platform fee)`
+          ? `"${a?.itemName || ''}" settled · ${shortAddr(sellerAddr)} received ${sellerReceived} ETH`
           : `"${a?.itemName || ''}" NFT claimed by ${shortAddr(winnerAddr)} · ${shortAddr(sellerAddr)} received ${sellerReceived} ETH`,
         ts: claimedAt,
         walletAddr: sellerAddr,
@@ -5259,7 +5259,7 @@ function _raBuildFromLocal(addr: string): void {
         : (parseFloat(a.winningBid) * 0.975).toFixed(6);
       const ts = a.itemClaimed ? ((a as any).claimedAt || (a.finalizedAt || a.createdAt || 0) + 20) : (a.finalizedAt || a.createdAt || 0);
       items.push({ type: 'eth_received', auctionName: a.itemName, amount: sellerReceived, ts, walletAddr: addr,
-        detail: `"${a.itemName}" settled · ${shortAddr(addr)} received ${sellerReceived} ETH (after 2.5% platform fee)`,
+        detail: `"${a.itemName}" settled · ${shortAddr(addr)} received ${sellerReceived} ETH`,
         winner: a.winner, winningBid: a.winningBid });
     }
     if (mySecret) {
