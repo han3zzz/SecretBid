@@ -990,7 +990,7 @@
           <span class="footer-badge green"><span class="footer-dot"></span>Sepolia Testnet</span>
         </div>
         <div class="footer-badge-row">
-          <span class="footer-badge purple">REX Privacy</span>
+          <span class="footer-badge purple">REX Privacy v2.1</span>
         </div>
         <div class="footer-badge-row">
           <span class="footer-badge blue">ERC-721 / ERC-1155</span>
@@ -1000,7 +1000,7 @@
   </div>
 
   <div class="footer-bottom">
-    <span>© 2026 SecretBid · Built on Rialo</span>
+    <span>© 2025 SecretBid · Built on Rialo</span>
     <span class="footer-sep">·</span>
     <span>No warranties. Use at your own risk.</span>
     <span class="footer-sep">·</span>
@@ -1368,14 +1368,25 @@ if (mobFab) {
       return;
     }
 
-    const threeDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const q = qry(col(db, 'activity'), whr('ts', '>='  , threeDaysAgo), ord('ts', 'desc'), lim(MAX_ITEMS));
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    // Fetch more than MAX_ITEMS — 'bid' events are filtered out client-side below,
+    // so the raw query needs headroom or the top-30 docs can end up all-bid → empty ticker.
+    const FETCH_LIMIT = MAX_ITEMS * 3;
+    const q = qry(col(db, 'activity'), whr('ts', '>='  , sevenDaysAgo), ord('ts', 'desc'), lim(FETCH_LIMIT));
 
     snap(q, (snapshot) => {
       const items = [];
       snapshot.forEach(d => { const it = d.data(); if (it.type !== 'bid') items.push(it); });
       items.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      if (items.length > 0) renderTicker(items);
+      if (items.length > 0) {
+        renderTicker(items.slice(0, MAX_ITEMS));
+      } else {
+        // No non-bid activity in the window — show a clear placeholder instead of
+        // leaving the track blank (its previous innerHTML / fade UI would otherwise
+        // just sit there looking frozen).
+        track.innerHTML = `<span class="ticker-item"><span class="ticker-icon watch"><i class="bi bi-activity"></i></span>No recent activity in the last 7 days</span>`;
+        track.style.animationDuration = '';
+      }
     }, (err) => {
       console.warn('[Ticker] Firestore error:', err.message);
     });
