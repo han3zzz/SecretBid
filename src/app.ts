@@ -1881,7 +1881,7 @@ function renderDetailActions(a: Auction, phase: 0|1|2): void {
         <button class="btn btn-full" style="padding:13px;margin-bottom:8px;
           background:linear-gradient(135deg,var(--gold),var(--gold2));
           border:none;color:#1a1000;font-weight:700;font-size:14px;border-radius:var(--r2)" id="btn-claim">
-          <i class="bi bi-trophy-fill" style="margin-right:5px"></i> Claim My NFT — Token #${esc(a.tokenId ?? '')}
+          <i class="bi bi-trophy-fill" style="margin-right:5px"></i> Claim My NFT 
         </button>`;
     } else if (isWinner && a.itemClaimed) {
       winnerSection = `
