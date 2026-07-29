@@ -1,4 +1,3 @@
-
 import {
   BrowserProvider,
   Contract,
@@ -1771,6 +1770,12 @@ function renderDetailActions(a: Auction, phase: 0|1|2): void {
         toast('Invalid Bid', `Minimum bid is ${a.startPrice} ETH`, 'err');
         return;
       }
+      // Nếu đã có bid trước đó — số ETH mới phải LỚN HƠN tổng hiện tại (vì contract
+      // cộng dồn msg.value vào bid cũ, không ghi đè). Chặn ở đây trước khi mở modal.
+      if (existingBidAmt > 0 && amtVal <= existingBidAmt) {
+        toast('Invalid Bid', `New total must be higher than your current bid (${existingBidAmt.toFixed(4)} ETH).`, 'err');
+        return;
+      }
       showBidConfirmModal(id!, amtVal, a, () => handleBid(id!));
     });
 
@@ -2128,19 +2133,43 @@ async function handleBid(auctionId: number | string): Promise<void> {
     return;
   }
 
-  showTxOverlay('Placing Bid', 'Sending ETH bid to contract…');
-  try {
-    const amtWei = parseEther(amt.toString());
+  // ── Cộng dồn bid: contract lưu bids[id][sender].amount += msg.value ────────
+  // "amt" ở trên là TỔNG số ETH người dùng muốn đạt tới (vd: đã có 1 ETH, muốn
+  // lên 1.5 ETH). Nếu gửi cả amtWei (1.5 ETH) thì contract sẽ cộng dồn thành
+  // 1 + 1.5 = 2.5 ETH — SAI. Ta chỉ được gửi phần CHÊNH LỆCH (delta) lên chain.
+  const mySecretForBid = getMySecret(a);
+  const existingAmtEth = mySecretForBid ? parseFloat(mySecretForBid.amount || '0') : 0;
+  const totalWei    = parseEther(amt.toString());
+  const existingWei = existingAmtEth > 0 ? parseEther(existingAmtEth.toString()) : 0n;
 
+  if (existingAmtEth > 0 && totalWei <= existingWei) {
+    toast('Invalid Bid', `New total must be higher than your current bid (${existingAmtEth.toFixed(4)} ETH).`, 'err');
+    return;
+  }
+  const deltaWei = totalWei - existingWei; // <-- số ETH THỰC SỰ gửi lên contract
+  const deltaEth = formatEther(deltaWei);
+
+  showTxOverlay(
+    'Placing Bid',
+    existingAmtEth > 0
+      ? `Sending additional ${deltaEth} ETH to raise your bid from ${existingAmtEth.toFixed(4)} → ${amt.toFixed(4)} ETH…`
+      : 'Sending ETH bid to contract…'
+  );
+  try {
     if (!S.wallet.contract) {
       hideTxOverlay();
       toast('Contract Error', 'Could not connect to the smart contract. Please reconnect your wallet.', 'err');
       return;
     }
 
-    showTxOverlay('Awaiting Signature', 'Confirm placeBid() in MetaMask — your ETH will be sent directly to the contract…');
+    showTxOverlay(
+      'Awaiting Signature',
+      existingAmtEth > 0
+        ? `Confirm placeBid() in MetaMask — only the extra ${deltaEth} ETH will be charged…`
+        : 'Confirm placeBid() in MetaMask — your ETH will be sent directly to the contract…'
+    );
     const contractId = typeof auctionId === 'string' && /^\d+$/.test(auctionId) ? Number(auctionId) : auctionId;
-    const tx = await S.wallet.contract.placeBid(contractId, { value: amtWei });
+    const tx = await S.wallet.contract.placeBid(contractId, { value: deltaWei });
     showTxOverlay('Broadcasting…', `Tx: ${tx.hash.slice(0, 20)}… — waiting for Sepolia confirmation`);
     const txHash = tx.hash;
     await tx.wait(1);
@@ -2186,15 +2215,16 @@ async function handleBid(auctionId: number | string): Promise<void> {
       if (user) {
         const prevSpent = parseFloat(user.totalSpent || '0');
         await fbUpdate(`users/${bAddr}`, {
+          // Chỉ cộng phần THỰC SỰ vừa chi (delta) — tránh đếm trùng phần đã trả ở lần bid trước
           totalBids:  (user.totalBids || 0) + 1,
-          totalSpent: (prevSpent + amt).toFixed(6),
+          totalSpent: (prevSpent + parseFloat(deltaEth)).toFixed(6),
           lastActivity: Date.now(),
         });
       } else {
         // User does not exist in Firebase yet — create new profile
         await fbWrite(`users/${bAddr}`, {
           address: S.wallet.address, joinedAt: Date.now(), lastSeen: Date.now(),
-          totalBids: 1, auctionsWon: 0, totalSpent: amt.toFixed(6),
+          totalBids: 1, auctionsWon: 0, totalSpent: parseFloat(deltaEth).toFixed(6),
           totalWon: '0', auctionsCreated: 0, lastActivity: Date.now(),
         });
       }
@@ -2220,7 +2250,11 @@ async function handleBid(auctionId: number | string): Promise<void> {
     _mbBidCache[secretKey] = { amount: String(amt), refunded: false, ts: bidTs, source: 'fb' };
 
     hideTxOverlay();
-    toast('Bid Placed! 💰', `Bid ${amt} ETH placed on-chain.`, 'ok');
+    if (existingAmtEth > 0) {
+      toast('Bid Raised! 💰', `Sent +${parseFloat(deltaEth).toFixed(4)} ETH — total bid now ${amt.toFixed(4)} ETH.`, 'ok');
+    } else {
+      toast('Bid Placed! 💰', `Bid ${amt} ETH placed on-chain.`, 'ok');
+    }
     closeOverlay('overlay-detail');
 
   } catch (e: any) {
@@ -4935,18 +4969,21 @@ const RA_TYPE_CLASS: Record<string, string> = {
 
 function raApplyFilter(): void {
   const q = S.raSearch.toLowerCase();
-  S.raFiltered = S.raAllItems.filter(it => {
-    const typeClass = RA_TYPE_CLASS[it.type || it.event || ''] || 'system';
-    // map filter tab → type groups
-    let matchFilter = true;
-    if (S.raFilter === 'bid')     matchFilter = (it.type === 'bid');
-    else if (S.raFilter === 'reveal')  matchFilter = (it.type === 'finalized' || it.type === 'nft_claim' || it.type === 'eth_received');
-    else if (S.raFilter === 'auction') matchFilter = (it.type === 'create');
-    else if (S.raFilter === 'system')  matchFilter = (it.type === 'connect' || it.type === 'refund' || it.type === 'transfer');
-    const detail = (it.detail || it.text || '').toLowerCase();
-    const matchSearch = !q || detail.includes(q) || (it.auctionName||'').toLowerCase().includes(q);
-    return matchFilter && matchSearch;
-  });
+  S.raFiltered = S.raAllItems
+    // Bỏ các event "rỗng" — bid 0 ETH, finalized không có winner, eth_received 0 ETH, v.v.
+    .filter(isMeaningfulActivity)
+    .filter(it => {
+      const typeClass = RA_TYPE_CLASS[it.type || it.event || ''] || 'system';
+      // map filter tab → type groups
+      let matchFilter = true;
+      if (S.raFilter === 'bid')     matchFilter = (it.type === 'bid');
+      else if (S.raFilter === 'reveal')  matchFilter = (it.type === 'finalized' || it.type === 'nft_claim' || it.type === 'eth_received');
+      else if (S.raFilter === 'auction') matchFilter = (it.type === 'create');
+      else if (S.raFilter === 'system')  matchFilter = (it.type === 'connect' || it.type === 'refund' || it.type === 'transfer');
+      const detail = (it.detail || it.text || '').toLowerCase();
+      const matchSearch = !q || detail.includes(q) || (it.auctionName||'').toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
   S.raPage = 1;
   raRenderPage();
 }
@@ -5060,7 +5097,8 @@ function raRenderPagination(totalPages: number): void {
 }
 
 function raUpdateStats(): void {
-  const all = S.raAllItems;
+  // Dùng danh sách đã loại bỏ event "rỗng" (bid 0 ETH, finalized không có winner, ...)
+  const all = S.raAllItems.filter(isMeaningfulActivity);
   const byType = (t: string) => all.filter(a => (a.type||a.event) === t).length;
   const s = (id: string, v: string | number) => { const el = document.getElementById(id); if (el) el.textContent = String(v); };
   s('ra-stat-total',   all.length);
@@ -5083,7 +5121,7 @@ function raUpdateTimeline(): void {
     bid:'var(--blue)', create:'var(--purple)', finalized:'var(--gold)',
     nft_claim:'var(--blue)', refund:'var(--red)', connect:'var(--glow)', transfer:'var(--glow)',
   };
-  wrap.innerHTML = S.raAllItems.slice(0, 6).map(it => {
+  wrap.innerHTML = S.raAllItems.filter(isMeaningfulActivity).slice(0, 6).map(it => {
     const type  = it.type || it.event || 'connect';
     const label = it.auctionName || it.text || type;
     return `<div class="ra-tl-item">
@@ -5845,12 +5883,44 @@ function activityDetail(it: any): string {
 }
 
 
+const RA_NULL_ADDR = '0x0000000000000000000000000000000000000000';
+
+/**
+ * Loại bỏ các activity "rỗng" — không mang thông tin thật cho người xem:
+ *  - bid: amount = 0 hoặc thiếu (không thể có bid 0 ETH hợp lệ)
+ *  - finalized: chưa có winner (no-winner) hoặc winningBid = 0 → không phải sự kiện đáng chú ý
+ *  - eth_received: amount = 0 (không có ETH nào thực sự chuyển)
+ *  - nft_claim: thiếu địa chỉ người nhận
+ */
+function isMeaningfulActivity(it: any): boolean {
+  const type = it.type || it.event || '';
+  const amt  = parseFloat(it.amount ?? '0');
+
+  if (type === 'bid') {
+    return amt > 0;
+  }
+  if (type === 'finalized') {
+    const hasWinner = !!it.winner && it.winner !== RA_NULL_ADDR;
+    const winBid    = parseFloat(it.winningBid ?? it.amount ?? '0');
+    return hasWinner && winBid > 0;
+  }
+  if (type === 'eth_received') {
+    return amt > 0;
+  }
+  if (type === 'nft_claim') {
+    return !!(it.winner || it.walletAddr);
+  }
+  // create / connect — không có amount nên luôn hợp lệ
+  return true;
+}
+
 function buildActivityFeedHTML(data: any, maxItems: number = 8): string {
   if (!data) return '<div style="font-size:12px;color:var(--text3);padding:0.5rem 0">No activity yet — auctions and results will appear here.</div>';
   // Sidebar shows meaningful public events: auction created, bid placed, settled, NFT claimed.
   const SIDEBAR_TYPES = new Set(['create', 'bid', 'finalized', 'nft_claim', 'eth_received', 'connect']);
   const items = (Object.values(data) as any[])
     .filter(it => SIDEBAR_TYPES.has(it.type || it.event || ''))
+    .filter(isMeaningfulActivity)
     .sort((a,b) => (b.ts||0)-(a.ts||0))
     .slice(0, maxItems);
   if (!items.length) return '<div style="font-size:12px;color:var(--text3);padding:0.5rem 0">No auction events yet — check back soon.</div>';
@@ -6349,7 +6419,13 @@ function showBidConfirmModal(auctionId: number | string, amt: number, a: Auction
   if (existing) existing.remove();
 
   const usd = S.ethPrice ? ` ≈ $${(amt * S.ethPrice).toLocaleString('en', { maximumFractionDigits: 2 })}` : '';
-  const isUpdate = !!(S.localSecrets[a._fbKey ?? ''] || S.localSecrets[String(a.id)]);
+  // Số ETH đã khoá từ trước (nếu có) — contract cộng dồn msg.value nên phần
+  // thực sự bị trừ trong giao dịch này chỉ là (amt - existingAmt), không phải amt.
+  const mySecretConfirm = getMySecret(a);
+  const existingAmt = mySecretConfirm ? parseFloat(mySecretConfirm.amount || '0') : 0;
+  const isUpdate     = existingAmt > 0;
+  const deltaAmt     = isUpdate ? Math.max(0, amt - existingAmt) : amt;
+  const deltaUsd     = S.ethPrice ? ` ≈ $${(deltaAmt * S.ethPrice).toLocaleString('en', { maximumFractionDigits: 2 })}` : '';
   const timeLeft = a.biddingEnd - Math.floor(Date.now() / 1000);
   const urgencyNote = timeLeft < 3600
     ? `<div style="padding:8px 11px;background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.25);border-radius:var(--r2);font-size:11.5px;color:var(--red);font-weight:600">⚡ Closing in ${formatCountdown(a.biddingEnd)} — act fast!</div>`
@@ -6367,7 +6443,13 @@ function showBidConfirmModal(auctionId: number | string, amt: number, a: Auction
       <div class="modal-body">
         <div style="text-align:center;padding:1rem 0 1.2rem">
           <div style="font-size:2.8rem;font-family:var(--font-mono);font-weight:800;color:var(--glow);line-height:1">${amt.toFixed(4)}</div>
-          <div style="font-size:13px;color:var(--text3);margin-top:4px">ETH${usd}</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:4px">ETH total bid${usd}</div>
+          ${isUpdate ? `
+          <div style="margin-top:10px;display:inline-flex;flex-direction:column;gap:2px;padding:8px 14px;
+            background:rgba(200,150,10,0.08);border:1px solid rgba(200,150,10,0.28);border-radius:var(--r2)">
+            <span style="font-size:11px;color:var(--text3)">Already locked: <strong style="color:var(--text2)">${existingAmt.toFixed(4)} ETH</strong></span>
+            <span style="font-size:13px;color:var(--gold);font-weight:700;font-family:var(--font-mono)">+ ${deltaAmt.toFixed(4)} ETH to send now${deltaUsd}</span>
+          </div>` : ''}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
           <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:9px 11px">
@@ -6381,7 +6463,9 @@ function showBidConfirmModal(auctionId: number | string, amt: number, a: Auction
         </div>
         ${urgencyNote}
         <div style="margin:12px 0;padding:10px 12px;background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.2);border-radius:var(--r2);font-size:11.5px;color:var(--text2);line-height:1.7">
-          ⚠️ <strong style="color:var(--text)">Sealed bids cannot be withdrawn.</strong> Once placed, your ETH is locked until the auction is finalized and you either win or get refunded.
+          ⚠️ <strong style="color:var(--text)">Bids cannot be withdrawn.</strong> ${isUpdate
+            ? `Only the extra <strong style="color:var(--text)">${deltaAmt.toFixed(4)} ETH</strong> will be charged now — your ETH stays locked until the auction is finalized and you either win or get refunded.`
+            : `Once placed, your ETH is locked until the auction is finalized and you either win or get refunded.`}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
           <button class="btn btn-ghost" id="bid-confirm-cancel">Cancel</button>
