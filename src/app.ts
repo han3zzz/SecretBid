@@ -2249,6 +2249,25 @@ async function handleBid(auctionId: number | string): Promise<void> {
     (window as any)._mbBidCache = (window as any)._mbBidCache || {};
     _mbBidCache[secretKey] = { amount: String(amt), refunded: false, ts: bidTs, source: 'fb' };
 
+    // ── Cập nhật UI NGAY LẬP TỨC — không đợi Firestore onSnapshot đẩy dữ liệu về ──
+    // (onSnapshot có thể trễ vài trăm ms, hoặc không chạy gì cả nếu đang ở chế độ
+    // demo/offline không có Firebase — khiến card/modal hiển thị số bid CŨ cho tới
+    // khi người dùng tự load lại trang). "a" ở đây là cùng reference với object
+    // trong S.auctions nên gán trực tiếp sẽ cập nhật luôn danh sách gốc.
+    a.totalBidders = freshBidderCount;
+    renderAuctions();
+    updateStats();
+    if (document.getElementById('page-mybids')?.classList.contains('active')) {
+      renderMyBids();
+    }
+    // Nếu modal chi tiết vẫn đang mở cho đúng auction này, refresh lại panel
+    // hành động + oracle để phản ánh số bid mới trước khi đóng modal bên dưới.
+    if (S.currentAuctionId != null && String(S.currentAuctionId) === String(auctionId)) {
+      const freshPhase = calcPhase(a);
+      renderOracle(a, freshPhase);
+      renderDetailActions(a, freshPhase);
+    }
+
     hideTxOverlay();
     if (existingAmtEth > 0) {
       toast('Bid Raised! 💰', `Sent +${parseFloat(deltaEth).toFixed(4)} ETH — total bid now ${amt.toFixed(4)} ETH.`, 'ok');
