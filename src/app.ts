@@ -2360,36 +2360,45 @@ async function handleFinalize(auctionId: number | string): Promise<void> {
     const sellerAddr = a?.owner?.toLowerCase() || '';
     const winnerAddr = realWinner?.toLowerCase() || '';
     const sellerReceived = realSellerReceived || (realWinner ? (parseFloat(realWinningBid) * 0.975).toFixed(6) : '0');
+    const NULL_ADDR = '0x0000000000000000000000000000000000000000';
+    const hasRealWinner = !!realWinner && realWinner.toLowerCase() !== NULL_ADDR;
 
-    // General activity — for whoever triggers finalize (seller, winner, or anyone)
-    await fbPush('activity', {
-      type:'finalized', text:'Auction Finalized', color:'gold', icon:'🏆',
-      detail:`${a?.itemName} finalized · Winner: ${shortAddr(realWinner || '—')} · ${parseFloat(realWinningBid).toFixed(4)} ETH`,
-      ts: nowTs,
-      walletAddr: S.wallet?.address?.toLowerCase() || '',
-      auctionId: String(auctionId),
-      auctionName: a?.itemName || '',
-      winner: realWinner,
-      winningBid: realWinningBid,
-    });
-
-    // Winner-specific activity (if winner is different from the finalizer)
-    if (winnerAddr && winnerAddr !== (S.wallet?.address?.toLowerCase() || '')) {
+    if (hasRealWinner) {
+      // General activity — for whoever triggers finalize (seller, winner, or anyone)
       await fbPush('activity', {
-        type: 'finalized',
-        text: 'Auction Won',
-        color: 'gold',
-        icon: '🏆',
-        detail: `${shortAddr(winnerAddr)} won "${a?.itemName}" · Winning bid: ${parseFloat(realWinningBid).toFixed(4)} ETH · Claim your NFT within 3 days`,
+        type:'finalized', text:'Auction Finalized', color:'gold', icon:'🏆',
+        detail:`${a?.itemName} finalized · Winner: ${shortAddr(realWinner)} · ${parseFloat(realWinningBid).toFixed(4)} ETH`,
         ts: nowTs,
-        walletAddr: winnerAddr,
+        walletAddr: S.wallet?.address?.toLowerCase() || '',
         auctionId: String(auctionId),
         auctionName: a?.itemName || '',
         winner: realWinner,
         winningBid: realWinningBid,
-        amount: realWinningBid,
       });
+
+      // Winner-specific activity (if winner is different from the finalizer)
+      if (winnerAddr && winnerAddr !== (S.wallet?.address?.toLowerCase() || '')) {
+        await fbPush('activity', {
+          type: 'finalized',
+          text: 'Auction Won',
+          color: 'gold',
+          icon: '🏆',
+          detail: `${shortAddr(winnerAddr)} won "${a?.itemName}" · Winning bid: ${parseFloat(realWinningBid).toFixed(4)} ETH · Claim your NFT within 3 days`,
+          ts: nowTs,
+          walletAddr: winnerAddr,
+          auctionId: String(auctionId),
+          auctionName: a?.itemName || '',
+          winner: realWinner,
+          winningBid: realWinningBid,
+          amount: realWinningBid,
+        });
+      }
     }
+    // NOTE: Khi KHÔNG có winner (không ai đấu giá → seller "Cancel & Reclaim NFT"),
+    // KHÔNG ghi activity 'finalized' vào Firebase — tránh rác dữ liệu kiểu
+    // "Winner: — · 0.0000 ETH" mà không mang thông tin gì hữu ích cho người xem.
+    // Trạng thái `finalized: true` vẫn được cập nhật ở fbUpdate(`auctions/${fbKey}`)
+    // phía trên, nên UI (badge "No Winner"/"Cancelled") vẫn hiển thị đúng như bình thường.
 
     // NOTE: eth_received activity cho seller KHÔNG ghi ở đây.
     // ETH chỉ được ghi nhận khi winner đã claimNFT (xem handleClaim).
