@@ -1368,7 +1368,7 @@ if (mobFab) {
       return;
     }
 
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
     // Fetch more than MAX_ITEMS — 'bid' events are filtered out client-side below,
     // so the raw query needs headroom or the top-30 docs can end up all-bid → empty ticker.
     const FETCH_LIMIT = MAX_ITEMS * 3;
