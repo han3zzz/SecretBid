@@ -6990,4 +6990,11 @@ function showResetBanner(msg: string): void {
   });
 }
 
+// type="module" scripts are deferred — DOM is always ready here.
+// Guard kept for safety in case script is loaded differently.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => boot().catch(console.error));
+} else {
+  boot().catch(console.error);
+}
 
