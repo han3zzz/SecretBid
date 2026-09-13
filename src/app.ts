@@ -1952,6 +1952,107 @@ function renderDetailActions(a: Auction, phase: 0|1|2): void {
     document.getElementById('btn-claim')?.addEventListener('click', () => handleClaim(id!));
     document.getElementById('btn-refund')?.addEventListener('click', () => handleRefund(id!));
   }
+
+  // ── TRANSPARENCY: bids stay sealed while BIDDING is live; once the auction
+  //    has ENDED/FINALIZED, reveal every bidder + their bid amount on-chain ──
+  el.insertAdjacentHTML('beforeend', '<div id="md-all-bids"></div>');
+  void renderAllBidsTransparency(a, phase);
+}
+
+/**
+ * Reveal all bids for an auction once it is no longer live.
+ * - phase 0 (BIDDING): stays hidden — no one (including other bidders) can
+ *   see who has bid or for how much, only their own bid + total bidder count.
+ * - phase 1/2 (ENDED / FINALIZED): pulls every bidder address via
+ *   getBidders() and their deposited amount via getBid(), then renders a
+ *   sorted, public list so the result is fully auditable/minh bạch.
+ */
+async function renderAllBidsTransparency(a: Auction, phase: 0 | 1 | 2): Promise<void> {
+  const container = document.getElementById('md-all-bids');
+  if (!container) return;
+
+  // Still bidding — bids remain sealed, nothing to reveal yet.
+  if (phase === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  if (!S.wallet?.contract || (a.id === undefined || a.id === null)) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="bid-panel" style="margin-top:12px;border:1.5px solid var(--border2)">
+      <div class="bid-panel-title"><i class="bi bi-eye-fill"></i> All Bids — Revealed</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;color:var(--text3);font-size:12px">
+        <div class="spin-icon" style="width:14px;height:14px;border-width:2px;flex-shrink:0"></div>
+        Loading bids from chain…
+      </div>
+    </div>`;
+
+  try {
+    const contractId = typeof a.id === 'string' && /^\d+$/.test(a.id) ? Number(a.id) : a.id;
+    const addrs: string[] = await S.wallet.contract.getBidders(contractId);
+
+    // Re-check the modal wasn't closed / a different auction opened meanwhile.
+    if (!document.getElementById('md-all-bids') || String(S.currentAuctionId) !== String(a.id ?? a._fbKey)) return;
+
+    if (!addrs || !addrs.length) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const bids = await Promise.all(addrs.map(async (addr) => {
+      try {
+        const b = await S.wallet!.contract.getBid(contractId, addr);
+        return { addr, amount: parseFloat(formatEther(b.amount)), refunded: !!b.refunded };
+      } catch {
+        return { addr, amount: 0, refunded: false };
+      }
+    }));
+
+    // Highest bid first — this is the public, auditable ranking.
+    bids.sort((x, y) => y.amount - x.amount);
+
+    const winnerAddr = (((a as any)._onchainWinner || a.winner || '') as string).toLowerCase();
+
+    const rows = bids.map((b, i) => {
+      const isWinner = !!winnerAddr && b.addr.toLowerCase() === winnerAddr;
+      const isMe     = !!(S.wallet && S.wallet.address.toLowerCase() === b.addr.toLowerCase());
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;
+            padding:8px 10px;border-radius:var(--r2);margin-bottom:4px;
+            background:${isWinner ? 'rgba(200,150,10,0.08)' : 'transparent'};
+            border:1px solid ${isWinner ? 'rgba(200,150,10,0.25)' : 'var(--border)'}">
+          <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px;min-width:0">
+            <span style="color:var(--text3);flex-shrink:0">#${i + 1}</span>
+            <span style="color:${isWinner ? 'var(--gold)' : 'var(--text2)'};font-weight:${isWinner ? 700 : 500};
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${shortAddr(b.addr)}${isMe ? ' (You)' : ''}
+            </span>
+            ${isWinner ? '<span style="flex-shrink:0">🏆</span>' : ''}
+          </div>
+          <div style="font-family:var(--font-mono);font-size:12px;font-weight:700;flex-shrink:0;
+              color:${isWinner ? 'var(--gold)' : 'var(--text2)'}">
+            ${b.amount.toFixed(4)} ETH
+            ${b.refunded ? '<span style="color:var(--text3);font-weight:400;margin-left:4px">(refunded)</span>' : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="bid-panel" style="margin-top:12px;border:1.5px solid var(--border2)">
+        <div class="bid-panel-title"><i class="bi bi-eye-fill"></i> All Bids — Revealed</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5">
+          Bidding has ended — all ${bids.length} bid${bids.length !== 1 ? 's' : ''} are now public on-chain for transparency.
+        </div>
+        ${rows}
+      </div>`;
+  } catch (e: any) {
+    console.warn('[renderAllBidsTransparency]', e?.message);
+    container.innerHTML = '';
+  }
 }
 
 // toggleRex removed — new contract uses open bid, no REX relay needed
@@ -6997,4 +7098,3 @@ if (document.readyState === 'loading') {
 } else {
   boot().catch(console.error);
 }
-
