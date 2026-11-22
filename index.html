@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#F5F2EA"/>
 <title>SecretBid - Sealed Auction on Rialo</title>
 
 <!-- Google Fonts -->
@@ -27,6 +28,7 @@
 
 </head>
 <body>
+<a class="skip-link" href="#content">Skip to content</a>
 
 <!-- ── ANIMATED BACKGROUND ─────────────────────────────────── -->
 <div id="orbs" aria-hidden="true">
@@ -73,32 +75,32 @@
   </a>
 
   <div class="nav-tabs" id="nav-tabs">
-    <button class="nav-tab active" data-page="auctions">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:currentColor"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg> Auctions
+    <button title="Auctions" class="nav-tab active" data-page="auctions">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:currentColor"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg> <span class="tab-label">Auctions</span>
     </button>
-    <button class="nav-tab" data-page="mybids">
-      <i class="bi bi-receipt"></i> My Bids
+    <button title="Mybids" class="nav-tab" data-page="mybids">
+      <i class="bi bi-receipt"></i> <span class="tab-label">My Bids</span>
     </button>
    
-    <button class="nav-tab" data-page="create">
-      <i class="bi bi-plus-circle"></i> Create
+    <button title="Create" class="nav-tab" data-page="create">
+      <i class="bi bi-plus-circle"></i> <span class="tab-label">Create</span>
     </button>
-    <button class="nav-tab" data-page="scanner">
+    <button title="Scanner" class="nav-tab" data-page="scanner">
       <span class="tab-hot-badge">LIVE</span>
-      <i class="bi bi-activity"></i> BidWar Scanner
+      <i class="bi bi-activity"></i> <span class="tab-label">BidWar Scanner</span>
     </button>
-     <button class="nav-tab" data-page="vault">
-      <i class="bi bi-clock-history"></i> Activity
+     <button title="Vault" class="nav-tab" data-page="vault">
+      <i class="bi bi-clock-history"></i> <span class="tab-label">Activity</span>
     </button>
-    <button class="nav-tab" data-page="analytics">
-      <i class="bi bi-bar-chart-line"></i> Analytics
+    <button title="Analytics" class="nav-tab" data-page="analytics">
+      <i class="bi bi-bar-chart-line"></i> <span class="tab-label">Analytics</span>
     </button>
-    <button class="nav-tab" data-page="leaderboard">
-      <i class="bi bi-trophy"></i> Leaderboard
+    <button title="Leaderboard" class="nav-tab" data-page="leaderboard">
+      <i class="bi bi-trophy"></i> <span class="tab-label">Leaderboard</span>
     </button>
     <div class="nav-dropdown" id="nav-more-dropdown">
       <button class="nav-tab nav-dropdown-trigger" id="nav-more-btn" aria-haspopup="true" aria-expanded="false">
-        <i class="bi bi-three-dots"></i> More
+        <i class="bi bi-three-dots"></i> <span class="tab-label">More</span>
         <i class="bi bi-chevron-down nav-dropdown-chevron"></i>
       </button>
       <div class="nav-dropdown-menu" id="nav-more-menu" role="menu">
@@ -164,7 +166,37 @@
     <div class="mob-nav-ico"><i class="bi bi-bar-chart-line"></i></div>
     Stats
   </div>
+  <button class="mob-more" id="mob-more-btn" type="button" aria-haspopup="true" aria-expanded="false">
+    <div class="mob-nav-ico"><i class="bi bi-grid"></i></div>
+    More
+  </button>
 </div>
+
+<div class="mob-sheet-backdrop" id="mob-sheet-backdrop"></div>
+<div class="mob-sheet" id="mob-sheet" role="menu" aria-label="More pages">
+  <div class="mob-sheet-grip"></div>
+  <button type="button" data-go="leaderboard" role="menuitem"><i class="bi bi-trophy"></i> Leaderboard</button>
+  <button type="button" data-go="disputes" role="menuitem"><i class="bi bi-exclamation-triangle"></i> Disputes</button>
+  <button type="button" data-go="docs" role="menuitem"><i class="bi bi-book"></i> Docs</button>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('mob-more-btn'),sh=document.getElementById('mob-sheet'),bd=document.getElementById('mob-sheet-backdrop');
+  if(!btn||!sh||!bd) return;
+  function set(o){sh.classList.toggle('open',o);bd.classList.toggle('open',o);btn.setAttribute('aria-expanded',o);}
+  btn.addEventListener('click',function(){set(!sh.classList.contains('open'));});
+  bd.addEventListener('click',function(){set(false);});
+  sh.querySelectorAll('[data-go]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var p=b.dataset.go, t=document.querySelector('.nav-tab[data-page="'+p+'"]')||document.querySelector('.nav-dropdown-item[data-page="'+p+'"]');
+      if(t) t.click();
+      document.querySelectorAll('.mob-nav-item').forEach(function(i){i.classList.remove('active');});
+      btn.classList.add('active'); set(false); window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+  document.querySelectorAll('.mob-nav-item').forEach(function(i){i.addEventListener('click',function(){btn.classList.remove('active');set(false);});});
+})();
+</script>
 
 <!-- ── MOBILE FAB ──────────────────────────────────────────── -->
 <button class="fab" id="mob-fab" data-page="create" aria-label="Create auction">
@@ -174,43 +206,60 @@
 <!-- ╔══════════════════════════════════════════════════════════╗
      ║  MAIN CONTENT                                            ║
      ╚══════════════════════════════════════════════════════════╝ -->
-<div id="content">
-
-  <!-- ── STATS BAR ─────────────────────────────────────────── -->
-  <div class="stats-row stagger fade-in" id="stats-row">
-    <div class="stat-card">
-      <div class="stat-icon c-green">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:var(--glow)"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg>
-      </div>
-      <div>
-        <div class="stat-num" id="s-total" style="color:var(--glow)">—</div>
-        <div class="stat-lbl">Total Auctions</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon c-green"><i class="bi bi-graph-up-arrow" style="color:var(--glow)"></i></div>
-      <div><div class="stat-num" id="s-live" style="color:var(--glow)">—</div><div class="stat-lbl">Live Bids</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon c-purple"><i class="bi bi-people" style="color:var(--purple)"></i></div>
-      <div><div class="stat-num" id="s-bidders" style="color:var(--purple)">—</div><div class="stat-lbl">Total Bidders</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon c-gold"><i class="bi bi-coin" style="color:var(--gold)"></i></div>
-      <div><div class="stat-num" id="s-vol" style="color:var(--gold)">—</div><div class="stat-lbl">Total Volume</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon c-blue"><i class="bi bi-trophy" style="color:var(--blue)"></i></div>
-      <div><div class="stat-num" id="s-completed" style="color:var(--blue)">—</div><div class="stat-lbl">Completed</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon c-red"><i class="bi bi-fire" style="color:var(--red)"></i></div>
-      <div><div class="stat-num" id="s-fees" style="color:var(--red)">—</div><div class="stat-lbl">Fees Earned</div></div>
-    </div>
-  </div>
+<div id="content" tabindex="-1">
 
   <!-- ══════════════ AUCTIONS PAGE ═══════════════════════════ -->
   <div class="page active" id="page-auctions">
+    <section class="hero" aria-label="Welcome">
+      <div>
+        <div class="hero-eyebrow"><i class="bi bi-shield-lock-fill"></i> Sealed-bid auctions on Rialo</div>
+        <h1>Bid in secret. <em>Win fairly.</em></h1>
+        <p>Your bid stays hidden on-chain until bidding closes — no front-running, no sniping. Just the highest honest bid.</p>
+        <div class="hero-cta">
+          <button class="btn btn-primary" type="button" onclick="document.getElementById('auction-grid').scrollIntoView({behavior:'smooth',block:'start'})"><i class="bi bi-lightning-charge-fill"></i> Browse live auctions</button>
+          <button class="btn btn-ghost" type="button" onclick="document.querySelector('.nav-tab[data-page=create]').click()"><i class="bi bi-plus-circle"></i> Create an auction</button>
+        </div>
+      </div>
+      <div class="hero-steps">
+        <div class="hero-step"><div class="hero-step-num">1</div><div><b>Commit</b><span>Submit a hashed bid and a small deposit.</span></div></div>
+        <div class="hero-step"><div class="hero-step-num">2</div><div><b>Reveal</b><span>Open your bid with your secret nonce.</span></div></div>
+        <div class="hero-step"><div class="hero-step-num">3</div><div><b>Win</b><span>Highest valid bid takes the item.</span></div></div>
+      </div>
+    </section>
+
+    <!-- ── STATS BAR ─────────────────────────────────────────── -->
+    <div class="stats-row stagger fade-in" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon c-green">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;vertical-align:-0.125em;fill:var(--glow)"><path d="M222.716 311.307l-109.3-84.325c-8.698-6.709-21.195-5.09-27.898 3.602-6.708 8.691-5.103 21.189 3.601 27.898l109.293 84.318c8.705 6.708 21.196 5.103 27.905-3.595 7.709-9.699 6.097-22.19-2.601-28.898z"/><path d="M236.318 67.662l109.307 84.318c8.698 6.716 21.189 5.104 27.898-3.594 6.709-8.698 5.097-21.182-3.601-27.898l-109.3-84.324c-8.698-6.709-21.189-5.09-27.898 3.601-6.709 8.697-5.096 21.189 3.594 27.897z"/><polygon points="226.824,78.068 122.491,213.304 233.65,299.048 337.977,163.812"/><path d="M501.529 363.144l-185.626-143.2-32.864 42.598 185.633 143.2c11.764 9.075 28.652 6.901 37.72-4.864 9.082-11.771 6.901-28.659-4.863-37.734z"/><path d="M186.936 409.748c0-14.274-11.565-25.847-25.84-25.847H39.689c-14.274 0-25.84 11.572-25.84 25.847v19.166h173.087v-19.166z"/><rect x="0" y="445.143" width="200.786" height="34.833"/></svg>
+        </div>
+        <div>
+          <div class="stat-num" id="s-total" style="color:var(--glow)">—</div>
+          <div class="stat-lbl">Total Auctions</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon c-green"><i class="bi bi-graph-up-arrow" style="color:var(--glow)"></i></div>
+        <div><div class="stat-num" id="s-live" style="color:var(--glow)">—</div><div class="stat-lbl">Live Bids</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon c-purple"><i class="bi bi-people" style="color:var(--purple)"></i></div>
+        <div><div class="stat-num" id="s-bidders" style="color:var(--purple)">—</div><div class="stat-lbl">Total Bidders</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon c-gold"><i class="bi bi-coin" style="color:var(--gold)"></i></div>
+        <div><div class="stat-num" id="s-vol" style="color:var(--gold)">—</div><div class="stat-lbl">Total Volume</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon c-blue"><i class="bi bi-trophy" style="color:var(--blue)"></i></div>
+        <div><div class="stat-num" id="s-completed" style="color:var(--blue)">—</div><div class="stat-lbl">Completed</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon c-red"><i class="bi bi-fire" style="color:var(--red)"></i></div>
+        <div><div class="stat-num" id="s-fees" style="color:var(--red)">—</div><div class="stat-lbl">Fees Earned</div></div>
+      </div>
+    </div>
+
     <div class="main-grid">
       <div>
         <div class="filter-bar">
